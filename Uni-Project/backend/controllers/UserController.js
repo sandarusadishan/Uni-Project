@@ -1,9 +1,3 @@
-//200 ok server code
-//500 server fault
-//400 client request fault
-//404 wrong address
-//403 othentication part is wrong
-
 import User from "../models/user.js";
 
 export function getUsers(req, res) {
@@ -33,7 +27,7 @@ export function createUsers(req, res) {
 }
 
 export function deleteUsers(req, res) {
-  User.deleteOne({ name: req.body.name }).then(() => {
+  User.deleteOne({ gmail: req.body.gmail }).then(() => {
     res.json({
       message: " user deleted successfully",
     });
