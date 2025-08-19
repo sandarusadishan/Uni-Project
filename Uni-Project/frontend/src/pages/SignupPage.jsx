@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import api from '../api/axios'; // <-- Axios instance එක import කර ඇත
+import api from '../api/axios'; //
 
 const AuthBackground = () => (
     <div className="fixed top-0 left-0 w-full h-full -z-10">
@@ -24,11 +24,11 @@ const SignupPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const navigate = useNavigate();
 
-    // Form එක Submit කරන handle එක
+  
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Passwords ගැලපේදැයි පරීක්ෂා කරන්න
+       
         if (password !== confirmPassword) {
             alert('Passwords do not match!');
             return;

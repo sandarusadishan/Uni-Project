@@ -17,7 +17,7 @@ const AdminMenuItems = () => {
             description: newItem.description,
             imagePath: newItem.imagePath
         });
-        setNewItem({ name: '', price: '', description: '', imagePath: '' }); // Form එක clear කරනවා
+        setNewItem({ name: '', price: '', description: '', imagePath: '' }); 
     };
     
     return (
