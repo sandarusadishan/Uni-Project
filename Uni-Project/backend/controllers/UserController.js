@@ -1,39 +1,71 @@
 import User from "../models/user.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-export function getUsers(req, res) {
-  User.find().then((userlist) => {
-    [
-      res.json({
-        List: userlist,
-      }),
-    ];
-  });
-}
+export function createUser(req, res) {
+  const newUserData = req.body;
+  newUserData.password = bcrypt.hashSync(newUserData.password, 10);
 
-export function createUsers(req, res) {
-  const user = new User(req.body);
+  const user = new User(newUserData);
+
   user
     .save()
     .then(() => {
       res.json({
-        message: "user created",
+        message: " User Created",
       });
     })
-    .catch(() => {
+    .catch((error) => {
       res.json({
-        message: "user not created",
+        message: "User not created",
       });
     });
 }
 
-export function deleteUsers(req, res) {
-  User.deleteOne({ gmail: req.body.gmail }).then(() => {
+export function loginUser(req, res) {
+  User.find({ email: req.body.email }).then((users) => {
+    if (users.length == 0) {
+      res.json({
+        message: "User not found",
+      });
+    } else {
+      const user = users[0];
+
+      const isPasswordCorrect = bcrypt.compareSync(
+        req.body.password,
+        user.password
+      );
+
+      if (isPasswordCorrect) {
+        const token = jwt.sign(
+          {
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isBlocked: user.isBlocked,
+            type: user.type,
+            profilePicture: user.profilePicture,
+          },
+          "cbc-secret-key-7973"
+        );
+
+        res.json({
+          message: "User logged in",
+          token: token,
+        });
+      } else {
+        res.json({
+          message: "User not logged in invalid password",
+        });
+      }
+    }
+  });
+}
+
+export function deleteUser(req, res) {
+  User.deleteUser({ email: req.body.email }).then(() => {
     res.json({
-      message: " user deleted successfully",
+      message: "User sccessfully deleted",
     });
-  }).catch(()=>{
-    res.json({
-      message : "user not deleted"
-    })
-  })
+  });
 }
