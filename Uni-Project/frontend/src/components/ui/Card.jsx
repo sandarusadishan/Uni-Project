@@ -11,7 +11,7 @@ const Card = ({ item }) => {
                     onError={(e) => { e.target.onerror = null; e.target.src = ''; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                <span className="absolute bottom-4 right-4 text-2xl font-bold text-yellow-400 text-shadow-dark">${item.price.toFixed(2)}</span>
+                <span className="absolute bottom-4 right-4 text-2xl font-bold text-yellow-400 text-shadow-dark">LKR {item.price.toFixed(2)}</span>
             </div>
             <div className="p-6 text-left">
                 <h3 className="text-2xl font-bold text-white mb-2">{item.name}</h3>

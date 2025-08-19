@@ -36,8 +36,10 @@ const Header = () => {
                             <NavLink to="/login" className="hidden md:inline-block text-gray-900 font-bold py-2 px-6 rounded-full bg-gradient-to-r from-yellow-400 to-amber-300 hover:from-amber-300 hover:to-yellow-400 transition-all duration-300 transform hover:scale-105">
                                 Login
                             </NavLink>
-                            <button className="relative text-2xl text-gray-200 hover:text-white transition-colors">
-                                <FiShoppingCart ></FiShoppingCart>                            </button>
+                            {/* Desktop: Changed from a button to NavLink */}
+                            <NavLink to="/cart" className="relative text-2xl text-gray-200 hover:text-white transition-colors">
+                                <FiShoppingCart />
+                            </NavLink>
                             <button className="md:hidden text-2xl text-gray-200" onClick={() => setMobileMenuOpen(true)}>
                                 <FiMenu />
                             </button>
@@ -50,7 +52,7 @@ const Header = () => {
             <div className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 transition-opacity duration-300 md:hidden ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setMobileMenuOpen(false)}>
                 <div className={`fixed top-0 right-0 h-full w-4/5 max-w-sm bg-gray-900 shadow-2xl z-60 transition-transform duration-300 transform ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`} onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-between items-center p-6 border-b border-gray-700">
-                         <Link to="/" className="text-xl font-bold text-white">
+                        <Link to="/" className="text-xl font-bold text-white">
                             🍔 <span className="text-yellow-400">Grill</span>Melt
                         </Link>
                         <button onClick={() => setMobileMenuOpen(false)} className="text-2xl">
@@ -62,6 +64,10 @@ const Header = () => {
                         <NavLink to="/menu" onClick={() => setMobileMenuOpen(false)}>Menu</NavLink>
                         <NavLink to="/challenges" onClick={() => setMobileMenuOpen(false)}>Challenges</NavLink>
                         <NavLink to="/rewards" onClick={() => setMobileMenuOpen(false)}>Rewards</NavLink>
+                        
+                        {/* Mobile: Added a new NavLink for the cart */}
+                        <NavLink to="/cart" onClick={() => setMobileMenuOpen(false)}>Cart</NavLink>
+
                         <div className="border-t border-gray-700 pt-6">
                             <NavLink to="/login" className="bg-yellow-400 text-black text-center font-bold w-full block py-3 rounded-lg" onClick={() => setMobileMenuOpen(false)}>Login / Sign Up</NavLink>
                         </div>

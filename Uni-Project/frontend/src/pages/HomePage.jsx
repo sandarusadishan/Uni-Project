@@ -63,7 +63,6 @@ const BackgroundSlideshow = () => {
                     className={`absolute w-full h-full transition-opacity duration-[2000ms] ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
                 >
                     <div
-                        style={{ backgroundImage: `url(${img})` }}
                         className="w-full h-full bg-cover bg-center"
                         // The animation is applied only to the active slide
                         style={{
