@@ -18,11 +18,8 @@ const userSchema = mongoose.Schema({
   role: {
     type: String,
     default: "customer",
-  }
-}, 
-{ 
-  timestamps: true 
-}); // Add closing brace and parenthesis for schema
+  },
+});
 
 // Encrypt password before saving
 userSchema.pre("save", async function (next) {

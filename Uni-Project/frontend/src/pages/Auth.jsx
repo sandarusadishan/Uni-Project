@@ -59,9 +59,9 @@ const Auth = () => {
         <Card className="w-full max-w-md p-8 glass elegant-shadow">
           <div className="mb-8 text-center">
             {/* UPDATED LOGO AND TEXT SECTION */}
-            <Link to="/" className="flex items-center justify-center gap-2 mb-4"> {/* <-- ★ FIX APPLIED HERE */}
-              <img src="/logo.png" alt="BurgerShop Logo" className="h-10 w-auto" />
-              <span className="text-3xl font-bold text-transparent bg-gradient-to-r from-primary to-accent bg-clip-text">
+            <Link to="/" className="flex items-center justify-center gap-2 mb-4"> {/* Centered the logo and text */}
+              <img src="/logo.png" alt="BurgerShop Logo" className="h-10 w-auto" /> {/* Slightly larger logo */}
+              <span className="text-3xl font-bold text-transparent bg-gradient-to-r from-primary to-accent bg-clip-text"> {/* Larger and styled text */}
                 BurgerShop
               </span>
             </Link>
@@ -97,7 +97,7 @@ const Auth = () => {
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="password"
+                      placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -128,7 +128,7 @@ const Auth = () => {
                   <Input
                     id="name"
                     type="text"
-                    placeholder="name"
+                    placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -151,7 +151,7 @@ const Auth = () => {
                     <Input
                       id="register-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="password"
+                      placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -218,8 +218,6 @@ const Auth = () => {
               Facebook
             </Button>
           </div>
-
-        
         </Card>
       </div>
     </div>
