@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 const AuthContext = createContext();
 
 const USER_STORAGE_KEY = 'burger_shop_user';
-const USERS_DB_KEY = 'burger_shop_users';
+const API_URL = 'http://localhost:3000/api/users';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -11,74 +11,57 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem(USER_STORAGE_KEY);
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+      const userObject = savedUser ? JSON.parse(savedUser) : null;
+      if (userObject && userObject.token) {
+        setUser(userObject);
       }
     } catch (error) {
       console.error("Failed to parse user from localStorage", error);
       localStorage.removeItem(USER_STORAGE_KEY);
     }
-
-    // Seed a default admin user if no users exist
-    const allUsers = localStorage.getItem(USERS_DB_KEY);
-    if (!allUsers || allUsers === '[]') {
-      const adminUser = {
-        id: 'admin-user-01',
-        email: 'admin@burger.com',
-        password: 'admin123', // In a real app, this would be hashed on the server
-        name: 'Admin User',
-        role: 'admin',
-        loyaltyPoints: 999,
-      };
-      localStorage.setItem(USERS_DB_KEY, JSON.stringify([adminUser]));
-    }
   }, []);
 
-  const getStoredUsers = () => {
-    try {
-      return JSON.parse(localStorage.getItem(USERS_DB_KEY) || '[]');
-    } catch (error) {
-      console.error("Failed to parse users from localStorage", error);
-      return [];
-    }
-  }
-
   const handleSuccessfulAuth = useCallback((authenticatedUser) => {
-    // Never store password in state or session storage
-    const { password: _, ...userToStore } = authenticatedUser;
+    // The backend already removes the password. We store the user object and token.
+    const userToStore = authenticatedUser;
     setUser(userToStore);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userToStore));
   }, []);
 
   const login = useCallback(async (email, password) => {
-    // MOCK: In production, call an API. Storing passwords in localStorage is insecure.
-    const users = getStoredUsers();
-    const foundUser = users.find(u => u.email === email && u.password === password);
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-    if (!foundUser) throw new Error('Invalid credentials');
-    handleSuccessfulAuth(foundUser);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to log in');
+    }
+
+    handleSuccessfulAuth(data);
   }, [handleSuccessfulAuth]);
 
   const register = useCallback(async (email, password, name) => {
-    const users = getStoredUsers();
+    const response = await fetch(`${API_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
 
-    if (users.find(u => u.email === email)) {
-      throw new Error('Email already exists');
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to register');
     }
 
-    const newUser = {
-      id: `${Date.now()}-${Math.random()}`, // Slightly more unique ID for mock
-      email,
-      password, // In a real app, this would be hashed on the server
-      name,
-      role: 'customer',
-      loyaltyPoints: 0,
-    };
-
-    users.push(newUser);
-    localStorage.setItem(USERS_DB_KEY, JSON.stringify(users));
-
-    handleSuccessfulAuth(newUser);
+    handleSuccessfulAuth(data);
   }, [handleSuccessfulAuth]);
 
   const logout = () => {
@@ -87,7 +70,7 @@ export const AuthProvider = ({ children }) => {
   };
     
   return (
-    <AuthContext.Provider value={useMemo(() => ({ user, login, register, logout, isAuthenticated: !!user }), [user, login, register])}>
+    <AuthContext.Provider value={useMemo(() => ({ user, login, register, logout, isAuthenticated: !!user?.token }), [user, login, register])}>
       {children}
     </AuthContext.Provider>
   );

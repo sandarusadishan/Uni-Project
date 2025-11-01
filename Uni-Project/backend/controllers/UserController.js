@@ -1,71 +1,71 @@
-import User from "../models/user.js";
-import bcrypt from "bcrypt";
+import User from "../models/User.js";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-export function createUser(req, res) {
-  const newUserData = req.body;
-  newUserData.password = bcrypt.hashSync(newUserData.password, 10);
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
+};
 
-  const user = new User(newUserData);
+export const createUser = async (req, res) => {
+  const { name, email, password } = req.body;
 
-  user
-    .save()
-    .then(() => {
-      res.json({
-        message: " User Created",
-      });
-    })
-    .catch((error) => {
-      res.json({
-        message: "User not created",
-      });
+  try {
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      password,
     });
-}
 
-export function loginUser(req, res) {
-  User.find({ email: req.body.email }).then((users) => {
-    if (users.length == 0) {
-      res.json({
-        message: "User not found",
+    if (user) {
+      const { password: _, ...userPayload } = user.toObject();
+      res.status(201).json({
+        ...userPayload,
+        token: generateToken(user._id),
       });
     } else {
-      const user = users[0];
-
-      const isPasswordCorrect = bcrypt.compareSync(
-        req.body.password,
-        user.password
-      );
-
-      if (isPasswordCorrect) {
-        const token = jwt.sign(
-          {
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            isBlocked: user.isBlocked,
-            type: user.type,
-            profilePicture: user.profilePicture,
-          },
-          "cbc-secret-key-7973"
-        );
-
-        res.json({
-          message: "User logged in",
-          token: token,
-        });
-      } else {
-        res.json({
-          message: "User not logged in invalid password",
-        });
-      }
+      res.status(400).json({ message: "Invalid user data" });
     }
-  });
-}
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error during registration" });
+  }
+};
+
+export const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const { password: _, ...userPayload } = user.toObject();
+      res.json({
+        ...userPayload,
+        token: generateToken(user._id),
+      });
+    } else {
+      res.status(401).json({ message: "Invalid email or password" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error during login" });
+  }
+};
 
 export function deleteUser(req, res) {
-  User.deleteUser({ email: req.body.email }).then(() => {
+  // This is a placeholder, as User.deleteUser is not a standard method.
+  // You would typically use findByIdAndDelete or findOneAndDelete.
+  User.findOneAndDelete({ email: req.body.email }).then(() => {
     res.json({
-      message: "User sccessfully deleted",
+      message: "User successfully deleted",
     });
   });
 }
