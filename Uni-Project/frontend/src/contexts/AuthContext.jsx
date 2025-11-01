@@ -18,6 +18,20 @@ export const AuthProvider = ({ children }) => {
       console.error("Failed to parse user from localStorage", error);
       localStorage.removeItem(USER_STORAGE_KEY);
     }
+
+    // Seed a default admin user if no users exist
+    const allUsers = localStorage.getItem(USERS_DB_KEY);
+    if (!allUsers || allUsers === '[]') {
+      const adminUser = {
+        id: 'admin-user-01',
+        email: 'admin@burger.com',
+        password: 'admin123', // In a real app, this would be hashed on the server
+        name: 'Admin User',
+        role: 'admin',
+        loyaltyPoints: 999,
+      };
+      localStorage.setItem(USERS_DB_KEY, JSON.stringify([adminUser]));
+    }
   }, []);
 
   const getStoredUsers = () => {
