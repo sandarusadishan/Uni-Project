@@ -12,7 +12,7 @@ import { useToast } from '../hooks/use-toast';
 const DELIVERY_FEE = 350.00;
 
 const Cart = () => {
-  const { items, updateQuantity, removeItem, clearCart, total, generateBill } = useCart(); // eslint-disable-line no-unused-vars
+  const { items, updateQuantity, removeItem, clearCart, total, generateBill } = useCart(); 
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();

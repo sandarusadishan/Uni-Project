@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const OrderTracking = () => {
   const [orders, setOrders] = useState([]);
-  const { user } = useAuth();
+  useAuth();
 
   useEffect(() => {
     const allOrders = JSON.parse(localStorage.getItem('burger_shop_orders') || '[]');

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // <-- Add Link import
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -8,14 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
 import Navbar from '../components/Navbar';
-import { Eye, EyeOff } from 'lucide-react'; // <-- NEW: Import icons
+import { Eye, EyeOff } from 'lucide-react';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // <-- NEW: State for password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const { login, register } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -40,7 +40,6 @@ const Auth = () => {
     }
   };
 
-  // <-- NEW: Toggle function
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -52,8 +51,14 @@ const Auth = () => {
       <div className="container flex items-center justify-center px-4 py-20 mx-auto">
         <Card className="w-full max-w-md p-8 glass elegant-shadow">
           <div className="mb-8 text-center">
-            <div className="mb-4 text-6xl">🍔</div>
-            <h1 className="text-3xl font-bold">Welcome to BurgerShop</h1>
+            {/* UPDATED LOGO AND TEXT SECTION */}
+            <Link to="/" className="flex items-center justify-center gap-2 mb-4"> {/* Centered the logo and text */}
+              <img src="/logo.png" alt="BurgerShop Logo" className="h-10 w-auto" /> {/* Slightly larger logo */}
+              <span className="text-3xl font-bold text-transparent bg-gradient-to-r from-primary to-accent bg-clip-text"> {/* Larger and styled text */}
+                BurgerShop
+              </span>
+            </Link>
+            {/* END UPDATED LOGO AND TEXT SECTION */}
             <p className="mt-2 text-muted-foreground">Sign in to start ordering</p>
           </div>
 
@@ -81,18 +86,16 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  {/* NEW: Wrapper for icon */}
                   <div className="relative">
                     <Input
                       id="password"
-                      type={showPassword ? 'text' : 'password'} // <-- NEW: Conditional type
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="pr-10" // <-- NEW: Add padding to avoid text overlap
+                      className="pr-10"
                     />
-                    {/* NEW: Icon */}
                     <span
                       className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
                       onClick={togglePasswordVisibility}
@@ -137,18 +140,16 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-password">Password</Label>
-                  {/* NEW: Wrapper for icon */}
                   <div className="relative">
                     <Input
                       id="register-password"
-                      type={showPassword ? 'text' : 'password'} // <-- NEW: Conditional type
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="pr-10" // <-- NEW: Add padding to avoid text overlap
+                      className="pr-10"
                     />
-                    {/* NEW: Icon */}
                     <span
                       className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
                       onClick={togglePasswordVisibility}

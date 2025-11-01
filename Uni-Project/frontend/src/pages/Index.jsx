@@ -22,8 +22,20 @@ const AnimatedSection = ({ children, className }) => {
 };
 
 const HeroSection = () => (
-  <section className="container px-4 py-24 mx-auto text-center md:py-32">
-    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in ">
+  <section 
+    className="relative text-white"
+    style={{
+      backgroundImage: `url('https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=2070&auto=format&fit=crop')`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    }}
+  >
+    <div className="absolute inset-0 bg-black/60" />
+    <div className="relative z-10">
+      <Navbar />
+    </div>
+    <div className="container relative z-10 px-4 py-24 mx-auto text-center md:py-32">
+      <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       <h1 className="text-5xl font-bold text-white md:text-7xl" style={{ textShadow: '0 2px 15px rgba(0,0,0,0.5)' }}>
         The Best <span className="text-transparent bg-gradient-to-r from-primary to-accent bg-clip-text">Burgers</span> in Town
       </h1>
@@ -43,6 +55,7 @@ const HeroSection = () => (
         </Link>
       </div>
     </div>
+    </div>
   </section>
 );
 
@@ -53,8 +66,8 @@ const features = [
 ];
 
 const FeaturesSection = () => (
-  <AnimatedSection className="container px-4 py-16 mx-auto">
-    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+  <AnimatedSection className="py-16 bg-gradient-to-b from-background to-secondary">
+    <div className="container grid grid-cols-1 gap-8 px-4 mx-auto md:grid-cols-3">
       {features.map((feature, index) => (
         <Card key={index} className="p-6 text-center transition-all duration-300 border-white/10 glass elegant-shadow hover:scale-105 hover:border-primary/20">
           <div className="flex flex-col items-center space-y-4">
@@ -73,9 +86,9 @@ const FeaturesSection = () => (
 const FeaturedBurgersSection = () => {
   const featuredBurgers = mockBurgers.slice(0, 3);
   return (
-    <AnimatedSection className="container px-4 py-16 mx-auto">
+    <AnimatedSection className="py-16 bg-secondary">
       <h2 className="mb-12 text-3xl font-bold text-center md:text-4xl">Our Signature Burgers</h2>
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+      <div className="container grid grid-cols-1 gap-8 px-4 mx-auto md:grid-cols-3">
         {featuredBurgers.map((burger) => (
           <Card key={burger.id} className="overflow-hidden transition-all duration-300 border-white/10 glass group hover:shadow-primary/20 hover:scale-105 hover:border-primary/20">
             <img
@@ -96,7 +109,7 @@ const FeaturedBurgersSection = () => {
           </Card>
         ))}
       </div>
-      <div className="mt-12 text-center">
+      <div className="container px-4 mx-auto mt-12 text-center">
         <Link to="/menu">
           <Button variant="outline" size="lg">View Full Menu</Button>
         </Link>
@@ -106,7 +119,7 @@ const FeaturedBurgersSection = () => {
 };
 
 const Footer = () => (
-  <footer className="pt-16 mt-20 border-t border-white/10 bg-black/20 backdrop-blur-sm">
+  <footer className="pt-16 bg-background">
     <div className="container px-4 mx-auto">
       <div className="grid grid-cols-1 gap-8 mb-8 md:grid-cols-4">
         {/* Brand Info */}
@@ -154,25 +167,14 @@ const Footer = () => (
 );
 
 const Index = () => (
-  <div 
-    className="relative text-foreground"
-    style={{
-      backgroundImage: `url('https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=2070&auto=format&fit=crop')`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed',
-    }}
-  >
-    <div className="absolute inset-0 bg-black/60" />
-    <div className="relative z-10">
-      <Navbar/>
-      <main>
-        <HeroSection />
-        <FeaturesSection />
-        <FeaturedBurgersSection />
-      </main>
-      <Footer />
-    </div>
+  <div className="text-foreground">
+    {/* Navbar is now part of the HeroSection to float on top of the image */}
+    <main>
+      <HeroSection />
+      <FeaturesSection />
+      <FeaturedBurgersSection />
+    </main>
+    <Footer />
   </div>
 );
 
