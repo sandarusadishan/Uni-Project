@@ -22,7 +22,7 @@ const Navbar = () => {
       <div className="container px-4 py-4 mx-auto">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="text-3xl">🍔</div>
+            <img src="/logo.png" alt="BurgerShop Logo" className="h-8 w-auto" /> {/* <-- UPDATED LINE */}
             <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-primary to-accent bg-clip-text">
               BurgerShop
             </span>
