@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -29,39 +30,22 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = useCallback(async (email, password) => {
-    const response = await fetch(`${API_URL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to log in');
+    try {
+      const response = await axios.post(`${API_URL}/login`, { email, password });
+      handleSuccessfulAuth(response.data);
+    } catch (error) {
+      // axios wraps errors in error.response.data
+      throw new Error(error.response?.data?.message || error.message || 'Failed to log in');
     }
-
-    handleSuccessfulAuth(data);
   }, [handleSuccessfulAuth]);
 
   const register = useCallback(async (email, password, name) => {
-    const response = await fetch(`${API_URL}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to register');
+    try {
+      const response = await axios.post(`${API_URL}/register`, { name, email, password });
+      handleSuccessfulAuth(response.data);
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message || 'Failed to register');
     }
-
-    handleSuccessfulAuth(data);
   }, [handleSuccessfulAuth]);
 
   const logout = () => {
