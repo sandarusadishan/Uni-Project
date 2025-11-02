@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -69,16 +70,65 @@ All colors MUST be HSL.
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border transition-colors duration-200;
   }
   
   body {
     @apply font-sans bg-background text-foreground;
-    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Add smooth transitions to interactive elements */
+  button, a, input {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Keyframe animations for smooth entrances */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   
+  @keyframes fadeInBlur {
+    from { opacity: 0; filter: blur(5px); }
+    to { opacity: 1; filter: blur(0); }
+  }
+
+  @keyframes border-glow {
+    from { box-shadow: 0 0 15px -5px hsl(var(--primary) / 0.3); }
+    to { box-shadow: 0 0 25px 0px hsl(var(--primary) / 0.6); }
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  html {
+    /* Add smooth scrolling behavior */
+    scroll-behavior: smooth;
+    /* Start with a smaller base font size on mobile */
+    font-size: 14px;
+  }
+
+  @screen sm {
+    /* Scale up font size for tablets and desktops */
+    html {
+      font-size: 16px;
+    }
+  }
+
+  /* Responsive Typography */
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+  }
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  h3 {
+    @apply text-2xl md:text-3xl;
   }
 }
 
@@ -86,12 +136,28 @@ All colors MUST be HSL.
   .glass {
     @apply border bg-card/50 backdrop-blur-lg border-border/50;
   }
+
+  .animate-fadeInUp {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
   
+  .animate-fadeInBlur {
+    animation: fadeInBlur 0.6s ease-out forwards;
+  }
+
   .gold-glow {
     box-shadow: var(--shadow-gold);
   }
   
   .elegant-shadow {
     box-shadow: var(--shadow-elegant);
+  }
+
+  .border-glow {
+    animation: border-glow 1.5s ease-in-out infinite alternate;
+  }
+
+  .category-card:hover .category-card-image {
+    @apply scale-110;
   }
 }

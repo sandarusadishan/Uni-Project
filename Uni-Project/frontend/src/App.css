@@ -1,7 +1,7 @@
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem 1rem 2rem; /* Vertical padding top, horizontal, vertical padding bottom */
   text-align: center;
 }
 
@@ -39,4 +39,11 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* On medium screens and larger, increase horizontal padding */
+@media (min-width: 768px) {
+  #root {
+    padding: 2rem;
+  }
 }

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, User, LogOut, Award, Trophy, Package } from 'lucide-react';
 import { Button } from './ui/button';
@@ -10,15 +11,31 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Badge } from './ui/badge';
+import { cn } from '../lib/utils';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { items } = useCart();
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <nav className="sticky top-0 z-50 border-b glass">
+    <nav
+      className={cn(
+        'sticky top-0 z-50 transition-all duration-300',
+        isScrolled ? 'glass border-b' : 'bg-transparent'
+      )}
+    >
       <div className="container px-4 py-4 mx-auto">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">

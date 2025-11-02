@@ -43,8 +43,12 @@ const itemVariants = {
 };
 
 const BurgerCard = ({ burger, onAddToCart }) => (
-  <motion.div variants={itemVariants}>
-    <Card className="overflow-hidden transition-all duration-300 border-transparent glass group hover:shadow-primary/20 hover:scale-105 hover:border-primary/30">
+  <motion.div
+    variants={itemVariants}
+    whileHover={{ scale: 1.05, boxShadow: '0px 6px 20px rgba(255, 209, 102, 0.3)' }}
+    transition={{ type: 'spring', stiffness: 300 }}
+  >
+    <Card className="overflow-hidden transition-all duration-300 border-transparent glass group hover:shadow-primary/20 hover:border-primary/30">
       <div className="relative">
         <img 
           src={burger.image} 
@@ -52,16 +56,18 @@ const BurgerCard = ({ burger, onAddToCart }) => (
           className="object-cover w-full h-56 transition-transform duration-300 group-hover:scale-110"
         />
         <div className="absolute top-2 right-2">
-          <Badge variant="secondary" className="text-xs">{burger.category}</Badge>
+          <Badge variant="secondary" className="text-xs select-none">{burger.category}</Badge>
         </div>
       </div>
       <div className="p-4 space-y-3">
         <h3 className="text-xl font-bold truncate">{burger.name}</h3>
         <p className="text-sm text-muted-foreground h-10">{burger.description}</p>
-        
         <div className="flex items-end justify-between pt-2">
           <span className="text-2xl font-bold text-primary">LKR {burger.price.toFixed(2)}</span>
-          <Button onClick={() => onAddToCart(burger)} className="gap-2">
+          <Button 
+            onClick={() => onAddToCart(burger)} 
+            className="gap-2 flex items-center justify-center bg-gradient-to-tr from-yellow-400 to-yellow-300 hover:from-yellow-300 hover:to-yellow-400 transition-colors"
+          >
             <ShoppingCart className="w-4 h-4" />
             Add
           </Button>
@@ -96,35 +102,36 @@ const Menu = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary selection:bg-yellow-300 selection:text-black">
       <Navbar />
       <main className="container px-4 py-8 mx-auto">
         <motion.div 
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
         >
           <div className="mb-12 text-center">
-            <h1 className="text-4xl font-bold md:text-5xl">
+            <h1 className="text-4xl font-extrabold md:text-5xl tracking-tight">
               Explore Our <span className="text-transparent bg-gradient-to-r from-primary to-accent bg-clip-text">Menu</span>
             </h1>
             <p className="mt-3 text-lg text-muted-foreground">Find your next favorite burger.</p>
           </div>
 
           {/* Filters */}
-          <div className="sticky top-[60px] z-10 py-4 mb-8 bg-background/80 backdrop-blur-sm">
-            <div className="flex flex-col gap-4 md:flex-row">
+          <div className="sticky top-[60px] z-10 py-4 mb-8 bg-background/80 backdrop-blur-sm rounded-md shadow-md">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
               <div className="relative flex-1">
-                <Search className="absolute w-4 h-4 transform -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
+                <Search className="absolute w-5 h-5 transform -translate-y-1/2 left-4 top-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search burgers by name or description..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-12"
+                  aria-label="Search burgers"
                 />
               </div>
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full md:w-[220px]">
+                <SelectTrigger className="w-full md:w-[220px]" aria-label="Filter by Category">
                   <SelectValue placeholder="Filter by Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -140,8 +147,15 @@ const Menu = () => {
         </motion.div>
 
         {/* Burgers Grid */}
-        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredBurgers.map((burger) => <BurgerCard key={burger.id} burger={burger} onAddToCart={handleAddToCart} />)}
+        <motion.div 
+          variants={containerVariants} 
+          initial="hidden" 
+          animate="visible" 
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        >
+          {filteredBurgers.map((burger) => (
+            <BurgerCard key={burger.id} burger={burger} onAddToCart={handleAddToCart} />
+          ))}
         </motion.div>
 
         {filteredBurgers.length === 0 && (

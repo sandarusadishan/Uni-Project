@@ -98,7 +98,7 @@ const FeaturesSection = () => (
 );
 
 const FeaturedBurgersSection = () => {
-  const featuredBurgers = mockBurgers.slice(0, 3);
+  const featuredBurgers = mockBurgers.slice(0, 4);
   return (
     <section 
       className="relative z-20 py-24"
@@ -113,7 +113,7 @@ const FeaturedBurgersSection = () => {
       <div className="relative z-10">
       <h2 className="mb-12 text-3xl font-bold text-center md:text-4xl">Our Signature Burgers</h2>
       <motion.div 
-        className="container grid grid-cols-1 gap-8 px-4 mx-auto md:grid-cols-3"
+        className="container grid grid-cols-1 gap-8 px-4 mx-auto sm:grid-cols-2 lg:grid-cols-4"
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"

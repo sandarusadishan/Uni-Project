@@ -48,13 +48,13 @@ export const AuthProvider = ({ children }) => {
     }
   }, [handleSuccessfulAuth]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(USER_STORAGE_KEY);
-  };
+  }, []);
     
   return (
-    <AuthContext.Provider value={useMemo(() => ({ user, login, register, logout, isAuthenticated: !!user?.token }), [user, login, register])}>
+    <AuthContext.Provider value={useMemo(() => ({ user, login, register, logout, isAuthenticated: !!user?.token }), [user, login, register, logout])}>
       {children}
     </AuthContext.Provider>
   );
