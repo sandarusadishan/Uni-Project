@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('burger_shop_user');
+    localStorage.removeItem(USER_STORAGE_KEY);
   };
     
   return (

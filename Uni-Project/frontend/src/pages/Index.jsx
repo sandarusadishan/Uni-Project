@@ -1,29 +1,38 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useRef } from "react";
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ArrowRight, Star, Zap, Award, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { mockBurgers } from '../data/mockData';
-import { useInView } from 'react-intersection-observer';
 import Navbar from "../components/Navbar";
 
-const AnimatedSection = ({ children, className }) => {
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.2,
+      delayChildren: 0.2,
+    },
+  },
+};
 
-  return (
-    <section ref={ref} className={`transition-all duration-1000 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${className}`}>
-      {children}
-    </section>
-  );
+const itemVariants = {
+  hidden: { y: 30, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.6,
+      ease: 'easeOut',
+    },
+  },
 };
 
 const HeroSection = () => (
   <section 
-    className="relative text-white"
+    className="relative h-screen flex items-center justify-center text-white"
     style={{
       backgroundImage: `url('https://images.unsplash.com/photo-1561758033-d89a9ad46330?q=80&w=2070&auto=format&fit=crop')`,
       backgroundSize: 'cover',
@@ -31,10 +40,7 @@ const HeroSection = () => (
     }}
   >
     <div className="absolute inset-0 bg-black/60" />
-    <div className="relative z-10">
-      <Navbar />
-    </div>
-    <div className="container relative z-10 px-4 py-24 mx-auto text-center md:py-32">
+    <div className="container relative z-10 px-4 text-center">
       <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
       <h1 className="text-5xl font-bold text-white md:text-7xl" style={{ textShadow: '0 2px 15px rgba(0,0,0,0.5)' }}>
         The Best <span className="text-transparent bg-gradient-to-r from-primary to-accent bg-clip-text">Burgers</span> in Town
@@ -55,7 +61,7 @@ const HeroSection = () => (
         </Link>
       </div>
     </div>
-    </div>
+  </div>
   </section>
 );
 
@@ -66,60 +72,87 @@ const features = [
 ];
 
 const FeaturesSection = () => (
-  <AnimatedSection className="py-16 bg-gradient-to-b from-background to-secondary">
-    <div className="container grid grid-cols-1 gap-8 px-4 mx-auto md:grid-cols-3">
+  <section className="relative z-10 py-24 bg-background">
+    <motion.div
+      className="container grid grid-cols-1 gap-8 px-4 mx-auto md:grid-cols-3"
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.3 }}
+    >
       {features.map((feature, index) => (
-        <Card key={index} className="p-6 text-center transition-all duration-300 border-white/10 glass elegant-shadow hover:scale-105 hover:border-primary/20">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-              <feature.icon className="w-8 h-8 text-primary" />
+        <motion.div key={index} variants={itemVariants}>
+          <Card className="p-6 text-center transition-all duration-300 border-white/10 glass elegant-shadow hover:scale-105 hover:border-primary/20 h-full">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+                <feature.icon className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold">{feature.title}</h3>
+              <p className="text-sm text-muted-foreground">{feature.description}</p>
             </div>
-            <h3 className="text-xl font-bold">{feature.title}</h3>
-            <p className="text-sm text-muted-foreground">{feature.description}</p>
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
       ))}
-    </div>
-  </AnimatedSection>
+    </motion.div>
+  </section>
 );
 
 const FeaturedBurgersSection = () => {
   const featuredBurgers = mockBurgers.slice(0, 3);
   return (
-    <AnimatedSection className="py-16 bg-secondary">
+    <section 
+      className="relative z-20 py-24"
+      style={{
+        backgroundImage: `url('https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=1965&auto=format&fit=crop')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/70" />
+      <div className="relative z-10">
       <h2 className="mb-12 text-3xl font-bold text-center md:text-4xl">Our Signature Burgers</h2>
-      <div className="container grid grid-cols-1 gap-8 px-4 mx-auto md:grid-cols-3">
+      <motion.div 
+        className="container grid grid-cols-1 gap-8 px-4 mx-auto md:grid-cols-3"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+      >
         {featuredBurgers.map((burger) => (
-          <Card key={burger.id} className="overflow-hidden transition-all duration-300 border-white/10 glass group hover:shadow-primary/20 hover:scale-105 hover:border-primary/20">
+          <motion.div key={burger.id} variants={itemVariants}>
+            <Card className="overflow-hidden transition-all duration-300 border-white/10 glass group hover:shadow-primary/20 hover:scale-105 hover:border-primary/20 h-full flex flex-col">
             <img
               src={burger.image}
               alt={burger.name}
               className="object-cover w-full h-48 transition-transform duration-300 group-hover:scale-110"
             />
-            <div className="p-6 space-y-3">
+              <div className="flex flex-col flex-grow p-6 space-y-3">
               <h3 className="text-xl font-bold">{burger.name}</h3>
-              <p className="text-sm text-muted-foreground">{burger.description}</p>
-              <div className="flex items-center justify-between pt-2">
+                <p className="flex-grow text-sm text-muted-foreground">{burger.description}</p>
+                <div className="flex items-center justify-between pt-4 mt-auto">
                 <span className="text-2xl font-bold text-primary">LKR {burger.price.toFixed(2)}</span>
                 <Link to="/menu">
                   <Button>Order Now</Button>
                 </Link>
               </div>
             </div>
-          </Card>
+            </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
       <div className="container px-4 mx-auto mt-12 text-center">
         <Link to="/menu">
           <Button variant="outline" size="lg">View Full Menu</Button>
         </Link>
       </div>
-    </AnimatedSection>
+      </div>
+    </section>
   );
 };
 
 const Footer = () => (
-  <footer className="pt-16 bg-background">
+  <footer className="relative z-30 pt-24 bg-background">
     <div className="container px-4 mx-auto">
       <div className="grid grid-cols-1 gap-8 mb-8 md:grid-cols-4">
         {/* Brand Info */}
@@ -168,13 +201,15 @@ const Footer = () => (
 
 const Index = () => (
   <div className="text-foreground">
-    {/* Navbar is now part of the HeroSection to float on top of the image */}
-    <main>
-      <HeroSection />
-      <FeaturesSection />
-      <FeaturedBurgersSection />
-    </main>
-    <Footer />
+    <Navbar />
+    <div className="relative">
+      <main>
+        <HeroSection />
+        <FeaturesSection />
+        <FeaturedBurgersSection />
+      </main>
+      <Footer />
+    </div>
   </div>
 );
 

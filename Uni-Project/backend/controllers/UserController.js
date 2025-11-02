@@ -46,7 +46,12 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await bcrypt.compare(password, user.password))) {
-      const { password: _, ...userPayload } = user.toObject();
+      const userPayload = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      };
       res.json({
         ...userPayload,
         token: generateToken(user._id),
