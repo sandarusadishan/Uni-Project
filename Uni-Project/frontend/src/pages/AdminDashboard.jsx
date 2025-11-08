@@ -19,56 +19,61 @@ import {
   Save,
   X,
   Upload,
+  Loader2
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { Input } from "../components/ui/input";
-// ✅ NEW: Import Select components for the dropdown
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../components/ui/select';
+} from "../components/ui/select";
+import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../hooks/use-toast"; 
 
 // Define the base URLs
-const BASE_URL = "http://localhost:3000"; // ✅ Base URL for static files (images)
-const API_URL = `${BASE_URL}/api`; // API endpoint
+const BASE_URL = "http://localhost:3000";
+const API_URL = `${BASE_URL}/api`;
 
-// 🎯 Defining Fixed Categories for Admin Input
 const FIXED_CATEGORIES = [
-  'classic',
-  'premium',
-  'veggie',
-  'spicy',
-  'side',
-  'drink',
+  "classic",
+  "premium",
+  "veggie",
+  "spicy",
+  "side",
+  "drink",
 ];
 
 const AdminDashboard = () => {
   const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState([]); 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [isSaving, setIsSaving] = useState(false); 
+  
+  const { user } = useAuth(); 
+  const { toast } = useToast();
 
   const [newProduct, setNewProduct] = useState({
     name: "",
     price: "",
-    image: "",
     description: "",
     category: "",
   });
-  
-  const [selectedFile, setSelectedFile] = useState(null); 
-  const [imagePreviewUrl, setImagePreviewUrl] = useState(null); 
 
-  // ✅ Fetch data
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+
   useEffect(() => {
-    fetchProducts();
-    fetchUsers();
-    fetchOrders();
-  }, []);
+    if (user && user.token && user.role === 'admin') { 
+        fetchProducts();
+        fetchUsers();
+        fetchOrders(); 
+    }
+  }, [user]);
 
   useEffect(() => {
     if (selectedFile) {
@@ -80,102 +85,135 @@ const AdminDashboard = () => {
     }
   }, [selectedFile]);
 
+  // --- Data Fetching Functions ---
+
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${API_URL}/products`);
       const data = await res.json();
-      setProducts(data); 
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else {
+        console.error("Products API did not return an array.");
+        setProducts([]);
+      }
     } catch (error) {
       console.error("Error loading products:", error);
     }
   };
 
   const fetchUsers = async () => {
+    const token = user?.token;
+    if (!token) return;
+
     try {
-      const res = await fetch(`${API_URL}/users`);
+      const res = await fetch(`${API_URL}/users`, {
+          headers: { 'Authorization': `Bearer ${token}` } 
+      }); 
       const data = await res.json();
-      setUsers(data);
+      if (res.ok && Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        console.error("Users API did not return an array or failed.");
+        setUsers([]);
+      }
     } catch (error) {
       console.error("Error loading users:", error);
+      setUsers([]);
     }
   };
 
   const fetchOrders = async () => {
+    const token = user?.token;
+    if (!token) return;
+
     try {
-      const res = await fetch(`${API_URL}/orders`);
+      const res = await fetch(`${API_URL}/orders`, {
+          headers: {
+            'Authorization': `Bearer ${token}` 
+          }
+      }); 
       const data = await res.json();
-      setOrders(data);
+      
+      if (res.ok && Array.isArray(data)) { 
+        setOrders(data);
+      } else {
+        console.error("Orders API failed or did not return an array:", data);
+        setOrders([]); 
+      }
     } catch (error) {
       console.error("Error loading orders:", error);
+      setOrders([]); 
     }
   };
 
-  // ✅ Handle file selection
+  // --- Product Management Functions ---
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
   };
-
-  // ✅ Add Product
+  
+  // ✅ ADD PRODUCT FUNCTION (Token Added)
   const addProduct = async () => {
-    if (!newProduct.name.trim() || !newProduct.price)
-      return alert("Please enter valid product details");
-    
-    if (!newProduct.category)
-      return alert("Please select a product category");
-    
-    if (!selectedFile)
-      return alert("Please select an image file to upload");
+    if (!newProduct.name.trim() || !newProduct.price || !newProduct.category || !selectedFile) {
+      return toast({
+        title: "Missing fields",
+        description: "Please enter all product details and select an image.",
+        variant: "destructive"
+      });
+    }
 
-    setLoading(true);
+    setIsSaving(true);
     const formData = new FormData();
     formData.append("name", newProduct.name);
     formData.append("price", newProduct.price);
     formData.append("description", newProduct.description);
     formData.append("category", newProduct.category);
-    formData.append("imageFile", selectedFile); 
-
+    formData.append("imageFile", selectedFile);
+    
     try {
-      const res = await fetch(`${API_URL}/products`, {
-        method: "POST",
-        body: formData, 
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        alert("✅ Product added successfully!");
-        setNewProduct({
-          name: "", price: "", image: "", description: "", category: "",
+        const res = await fetch(`${API_URL}/products`, { 
+            method: "POST", 
+            body: formData, 
+            headers: { 'Authorization': `Bearer ${user?.token}` } 
         });
-        setSelectedFile(null); 
-        fetchProducts();
-      } else {
-        alert("❌ " + (data.message || "Error adding product"));
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Server error");
-    }
-    setLoading(false);
-  };
+        const data = await res.json();
 
-  // ✅ Edit Product
+        if (res.ok) {
+            toast({title: "✅ Success!", description: "Product added successfully."});
+            setNewProduct({ name: "", price: "", description: "", category: "" });
+            setSelectedFile(null);
+            setImagePreviewUrl(null);
+            fetchProducts();
+        } else {
+            toast({title: "❌ Error", description: data.message || "Error adding product. Check server logs.", variant: "destructive"});
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        toast({title: "Server Error", description: "Could not connect to server.", variant: "destructive"});
+    }
+    setIsSaving(false);
+  };
+  
   const startEditing = (product) => {
     setEditingProduct(product._id);
     setNewProduct({
       name: product.name,
       price: product.price,
-      image: product.image || "", 
+      image: product.image || "",
       description: product.description,
       category: product.category,
     });
-    setSelectedFile(null); 
-    setImagePreviewUrl(null); 
+    setSelectedFile(null);
+    setImagePreviewUrl(null);
   };
+  
+  // ✅ UPDATE PRODUCT FUNCTION (Token Added)
+  const updateProduct = async () => { 
+    if (!newProduct.name.trim() || !newProduct.price || !newProduct.category)
+        return toast({title: "Missing fields", description: "Please enter valid product details.", variant: "destructive"});
 
-  // ✅ Update Product
-  const updateProduct = async () => {
-    setLoading(true);
+    setIsSaving(true);
     const formData = new FormData();
     formData.append("name", newProduct.name);
     formData.append("price", newProduct.price);
@@ -184,44 +222,44 @@ const AdminDashboard = () => {
 
     if (selectedFile) {
       formData.append("imageFile", selectedFile);
-    } 
-
-    try {
-      const res = await fetch(`${API_URL}/products/${editingProduct}`, {
-        method: "PUT",
-        body: formData,
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        alert("✅ Product updated!");
-        setEditingProduct(null);
-        setNewProduct({
-          name: "", price: "", image: "", description: "", category: "",
-        });
-        setSelectedFile(null); 
-        setImagePreviewUrl(null); 
-        fetchProducts();
-      } else {
-        alert("❌ " + (data.message || "Error updating product"));
-      }
-    } catch (error) {
-      console.error("Update error:", error);
-      alert("Server error");
     }
-    setLoading(false);
+    
+    try {
+        const res = await fetch(`${API_URL}/products/${editingProduct}`, { 
+            method: "PUT", 
+            body: formData, 
+            headers: { 'Authorization': `Bearer ${user?.token}` } // Token added
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            toast({title: "✅ Success!", description: "Product updated successfully."});
+            cancelEdit();
+            fetchProducts();
+        } else {
+            toast({title: "❌ Error", description: data.message || "Error updating product", variant: "destructive"});
+        }
+    } catch (error) {
+        console.error("Update error:", error);
+        toast({title: "Server Error", description: "Could not connect to server.", variant: "destructive"});
+    }
+    setIsSaving(false);
   };
 
-  // ✅ Delete Product
+  // ✅ DELETE PRODUCT FUNCTION (Token Added)
   const deleteProduct = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {
-      const res = await fetch(`${API_URL}/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/products/${id}`, { 
+        method: "DELETE",
+        headers: { 'Authorization': `Bearer ${user?.token}` } // Token added
+      });
       if (res.ok) {
-        alert("🗑️ Product deleted!");
+        toast({title: "🗑️ Deleted!", description: "Product deleted successfully."});
         fetchProducts();
       } else {
-        alert("❌ Failed to delete product");
+        const data = await res.json();
+        toast({title: "❌ Error", description: data.message || "Failed to delete product", variant: "destructive"});
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -233,6 +271,51 @@ const AdminDashboard = () => {
     setNewProduct({ name: "", price: "", image: "", description: "", category: "" });
     setSelectedFile(null);
     setImagePreviewUrl(null);
+  };
+
+  // --- Order Status Management ---
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+      const token = user?.token;
+      if (!token || user?.role !== 'admin') {
+          toast({title: "Access Denied", description: "Not authorized to change status.", variant: "destructive"});
+          return;
+      }
+
+      if (!window.confirm(`Change status of Order #${orderId.slice(-6)} to ${newStatus}?`)) return;
+
+      try {
+          const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+              method: 'PUT',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`, 
+              },
+              body: JSON.stringify({ newStatus }),
+          });
+
+          if (res.ok) {
+              toast({title: "✅ Updated", description: `Status changed to ${newStatus}`});
+              fetchOrders(); 
+          } else {
+              const data = await res.json();
+              toast({title: "❌ Error", description: data.message || 'Failed to update status', variant: "destructive"});
+          }
+      } catch (error) {
+          console.error('Status update error:', error);
+          toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive"});
+      }
+  };
+
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+      case 'preparing': return 'bg-primary/10 text-primary border-primary/20';
+      case 'on-the-way': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      case 'delivered': return 'bg-green-500/10 text-green-400 border-green-500/20';
+      default: return 'bg-muted text-muted-foreground border-border';
+    }
   };
 
   const stats = [
@@ -255,7 +338,7 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Stats */}
+        {/* Stats Section */}
         <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
             <Card key={stat.label} className="p-6 glass">
@@ -268,7 +351,7 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Tabs */}
+        {/* Tabs Section */}
         <Card className="p-6 glass">
           <Tabs defaultValue="products">
             <TabsList className="grid w-full grid-cols-4">
@@ -283,8 +366,7 @@ const AdminDashboard = () => {
               <h3 className="mb-4 text-xl font-bold">
                 {editingProduct ? "Edit Product" : "Add Product"}
               </h3>
-
-              {/* Product Form */}
+              {/* Product Form UI */}
               <div className="grid gap-4 md:grid-cols-3">
                 <Input
                   placeholder="Product Name"
@@ -316,9 +398,8 @@ const AdminDashboard = () => {
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                 />
-                {/* 🎯 Category Dropdown */}
-                <Select 
-                  value={newProduct.category} 
+                <Select
+                  value={newProduct.category}
                   onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
                 >
                   <SelectTrigger>
@@ -339,9 +420,9 @@ const AdminDashboard = () => {
                 {editingProduct && newProduct.image && !selectedFile && (
                   <div className="p-2 border rounded-md">
                     <p className="text-sm font-semibold mb-1">Current Image:</p>
-                    <img 
-                      src={`${BASE_URL}${newProduct.image}`} 
-                      alt="Current Product" 
+                    <img
+                      src={`${BASE_URL}${newProduct.image}`}
+                      alt="Current Product"
                       className="w-24 h-24 object-cover rounded-md"
                     />
                   </div>
@@ -349,9 +430,9 @@ const AdminDashboard = () => {
                 {imagePreviewUrl && (
                   <div className="p-2 border rounded-md">
                     <p className="text-sm font-semibold mb-1">New Image Preview:</p>
-                    <img 
-                      src={imagePreviewUrl} 
-                      alt="New Image Preview" 
+                    <img
+                      src={imagePreviewUrl}
+                      alt="New Image Preview"
                       className="w-24 h-24 object-cover rounded-md"
                     />
                   </div>
@@ -362,18 +443,18 @@ const AdminDashboard = () => {
               <div className="flex gap-2 mt-4">
                 {editingProduct ? (
                   <>
-                    <Button onClick={updateProduct} disabled={loading}>
-                      <Save className="w-4 h-4 mr-2" /> 
-                      {loading ? "Saving..." : "Save Changes"}
+                    <Button onClick={updateProduct} disabled={isSaving}>
+                      {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                      {isSaving ? "Saving..." : "Save Changes"}
                     </Button>
-                    <Button variant="secondary" onClick={cancelEdit}>
+                    <Button variant="secondary" onClick={cancelEdit} disabled={isSaving}>
                       <X className="w-4 h-4 mr-2" /> Cancel
                     </Button>
                   </>
                 ) : (
-                  <Button onClick={addProduct} disabled={loading}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    {loading ? "Adding..." : "Add Product"}
+                  <Button onClick={addProduct} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                    {isSaving ? "Adding..." : "Add Product"}
                   </Button>
                 )}
               </div>
@@ -387,9 +468,9 @@ const AdminDashboard = () => {
                   <Card key={p._id} className="p-4 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                       {p.image && (
-                        <img 
-                          src={`${BASE_URL}${p.image}`} 
-                          alt={p.name} 
+                        <img
+                          src={`${BASE_URL}${p.image}`}
+                          alt={p.name}
                           className="w-12 h-12 object-cover rounded-md"
                         />
                       )}
@@ -422,22 +503,89 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
 
-            {/* ORDERS TAB */}
+            {/* ORDERS TAB (නිවැරදි කරන ලදි) */}
             <TabsContent value="orders" className="mt-6">
-              <h3 className="mb-4 text-xl font-bold">Recent Orders</h3>
-              {/* ... orders table ... */}
+              <h3 className="mb-4 text-xl font-bold">Recent Orders ({orders.length})</h3>
+              {orders.length === 0 ? (
+                <p className="text-muted-foreground">No orders yet.</p>
+              ) : (
+                <div className="space-y-4">
+                {orders.map((o) => (
+                  <Card key={o._id} className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex-1">
+                      <p className="font-bold text-lg">Order #{o._id.slice(-6)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Total: LKR {o.totalAmount?.toFixed(2)} | Customer:
+                        <span className="font-semibold text-foreground block md:inline-block">
+                            {/* ✅ User Name Display Logic: o.userId object එකෙන් name කියවයි */}
+                            {o.userId && typeof o.userId === 'object' 
+                                ? o.userId.name 
+                                : 'N/A'
+                            }
+                        </span>
+                      </p>
+                      <p className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block capitalize ${getStatusColor(o.status)}`}>
+                        {o.status.replace('-', ' ')}
+                      </p>
+                    </div>
+
+                    {/* Status Update Dropdown/Buttons */}
+                    <div className="flex items-center gap-2">
+                        <Select
+                            value={o.status}
+                            onValueChange={(newStatus) => updateOrderStatus(o._id, newStatus)}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Update Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="preparing">Preparing</SelectItem>
+                                <SelectItem value="on-the-way">On The Way</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                  </Card>
+                ))}
+                </div>
+              )}
             </TabsContent>
 
-            {/* USERS TAB */}
+            {/* USERS TAB (unchanged) */}
             <TabsContent value="users" className="mt-6">
               <h3 className="mb-4 text-xl font-bold">User Management</h3>
-              {/* ... user list ... */}
+              {users.length === 0 ? (
+                <p className="text-muted-foreground">No users found.</p>
+              ) : (
+                users.map((u) => (
+                  <Card key={u._id} className="p-4 flex justify-between mb-2 items-center">
+                    <div>
+                      <p className="font-bold">{u.name}</p>
+                      <p className="text-sm text-muted-foreground">{u.email}</p>
+                      {u.role && (
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${
+                            u.role === "admin"
+                              ? "bg-red-500/20 text-red-400"
+                              : "bg-green-500/20 text-green-400"
+                          }`}
+                        >
+                          {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
+                        </span>
+                      )}
+                    </div>
+                  </Card>
+                ))
+              )}
             </TabsContent>
 
-            {/* CHALLENGES TAB */}
+            {/* CHALLENGES TAB (unchanged) */}
             <TabsContent value="challenges" className="mt-6">
               <h3 className="mb-4 text-xl font-bold">Manage Challenges</h3>
-              {/* ... challenges management ... */}
+              <p className="text-muted-foreground">
+                Coming soon — you can add daily challenges for users here.
+              </p>
             </TabsContent>
           </Tabs>
         </Card>

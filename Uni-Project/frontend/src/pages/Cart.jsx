@@ -18,24 +18,27 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
 
 const DELIVERY_FEE = 350.0;
-// ✅ Base URL for backend-served images
 const BASE_URL = 'http://localhost:3000';
+const API_URL = `${BASE_URL}/api`;
 
 const Cart = () => {
   const { items, updateQuantity, removeItem, clearCart, total, generateBill } =
     useCart();
-  const { user, isAuthenticated } = useAuth();
+  // user object එකේ token සහ _id තිබිය යුතුයි
+  const { user, isAuthenticated } = useAuth(); 
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const [address, setAddress] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setIsCheckingOut(true);
 
     if (!isAuthenticated) {
+      toast({ title: 'Please log in to place an order.', variant: 'destructive' });
       navigate('/auth');
+      setIsCheckingOut(false);
       return;
     }
 
@@ -45,33 +48,52 @@ const Cart = () => {
       return;
     }
 
-    // Mock order creation (simulate API)
-    setTimeout(() => {
-      const order = {
-        id: `ORD${Date.now()}`,
-        items,
-        total: total + DELIVERY_FEE,
-        userId: user.id,
-        address,
-        status: 'preparing',
-        createdAt: new Date().toISOString(),
-      };
+    // 1. Backend API එකට යැවීමට අවශ්‍ය Order Data සකස් කිරීම
+    const orderData = {
+      items: items.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        image: item.image, // Product image path
+      })),
+      total: total + DELIVERY_FEE,
+      userId: user._id, 
+      address,
+    };
 
-      const orders = JSON.parse(
-        localStorage.getItem('burger_shop_orders') || '[]'
-      );
-      orders.push(order);
-      localStorage.setItem('burger_shop_orders', JSON.stringify(orders));
+    try {
+      // 2. Order API call කිරීම
+      const res = await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Auth Token එක header එක හරහා යවනු ලැබේ
+          Authorization: `Bearer ${user.token}`, 
+        },
+        body: JSON.stringify(orderData),
+      });
 
-      // Generate and download the bill
-      generateBill(order, user);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to place order.');
+      }
+
+      // Generate and download the bill (if needed)
+      // generateBill(orderData, user); 
 
       clearCart();
-      toast({ title: '🎉 Order placed successfully!' });
-      setIsCheckingOut(false);
+      toast({ title: '🎉 Order placed successfully!', description: `Order ID: ${data.orderId.slice(-6)}` });
+      
       navigate('/orders');
-    }, 1500);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({ title: '❌ Checkout Failed', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
+
 
   // 🛒 Empty cart UI
   if (items.length === 0) {
@@ -222,7 +244,7 @@ const Cart = () => {
                 onClick={handleCheckout}
                 className="w-full gap-2 transition-transform duration-200 gold-glow hover:scale-105"
                 size="lg"
-                disabled={isCheckingOut}
+                disabled={isCheckingOut || items.length === 0}
               >
                 {isCheckingOut ? (
                   <>

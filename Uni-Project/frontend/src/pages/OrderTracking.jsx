@@ -7,19 +7,49 @@ import { Package, Truck, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
 import Navbar from '../components/Navbar'; 
 import { useAuth } from '../contexts/AuthContext';
 
+const BASE_URL = 'http://localhost:3000';
+const API_URL = `${BASE_URL}/api`;
+
 const OrderTracking = () => {
   const [orders, setOrders] = useState([]);
-  useAuth();
+  const { user, isAuthenticated } = useAuth(); // AuthContext eken user and token laba ganna
 
   useEffect(() => {
-    const allOrders = JSON.parse(localStorage.getItem('burger_shop_orders') || '[]');
-    // Sort orders to show the most recent first
-    const sortedOrders = allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    setOrders(sortedOrders);
-  }, []);
+    const fetchOrders = async () => {
+      // User logged in and has ID, otherwise cannot fetch orders
+      if (!isAuthenticated || !user || !user._id) {
+        setOrders([]);
+        return; 
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/orders/user/${user._id}`, {
+          headers: {
+            Authorization: `Bearer ${user.token}`, // Auth token eka yawanna
+          },
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setOrders(data); // Backend eken sort wela enawa
+        } else {
+          console.error('Failed to fetch orders:', data.message);
+          setOrders([]);
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        setOrders([]);
+      }
+    };
+
+    fetchOrders();
+  }, [isAuthenticated, user]);
 
   const getStatusIcon = (status) => {
     switch (status) {
+      case 'pending':
+        return <Clock className="w-5 h-5 text-gray-500" aria-label="Pending" />;
       case 'preparing':
         return <Clock className="w-5 h-5 text-yellow-500" aria-label="Preparing" />;
       case 'on-the-way':
@@ -33,6 +63,8 @@ const OrderTracking = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'pending':
+        return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
       case 'preparing':
         return 'bg-primary/10 text-primary border-primary/20';
       case 'on-the-way':
@@ -66,16 +98,16 @@ const OrderTracking = () => {
           <div className="space-y-8">
             {orders.map((order, index) => (
               <Card
-                key={order.id}
+                key={order._id} // Backend ID eka use kirima
                 className="p-6 transition-all duration-300 sm:p-8 glass hover:border-primary/50 hover:shadow-lg animate-fadeInUp"
                 style={{ animationDelay: `${index * 100}ms` }}
                 role="region"
-                aria-labelledby={`order-${order.id}`}
+                aria-labelledby={`order-${order._id}`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
                   <div>
-                    <h3 id={`order-${order.id}`} className="text-2xl font-bold">
-                      Order #<span className="text-primary">{order.id}</span>
+                    <h3 id={`order-${order._id}`} className="text-2xl font-bold">
+                      Order #<span className="text-primary">{order._id.slice(-6)}</span>
                     </h3>
                     <time
                       dateTime={new Date(order.createdAt).toISOString()}
@@ -116,7 +148,8 @@ const OrderTracking = () => {
                       <br />
                       <span className="font-semibold text-foreground">{order.address}</span>
                     </p>
-                    <p className="mt-4 sm:mt-0 text-2xl font-extrabold text-primary">LKR {order.total.toFixed(2)}</p>
+                    {/* 🎯 totalAmount use kirima (Backend Model එකට අනුව) */}
+                    <p className="mt-4 sm:mt-0 text-2xl font-extrabold text-primary">LKR {order.totalAmount.toFixed(2)}</p> 
                   </div>
                 </div>
               </Card>
