@@ -2,9 +2,10 @@ import express from "express";
 import mongoose from "mongoose";
 import userRouter from "./routes/userRouter.js";
 import productRouter from "./routes/productRouter.js";
-import User from "./models/User.js"; // <-- Import the User model
+import User from "./models/User.js"; 
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path"; // ✅ NEW: Import path module
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ mongoose.connect(monogourl).then(async () => {
       await User.create({
         name: 'Admin',
         email: 'admin@burger.com',
-        password: 'admin123', // In a real app, use a more secure password
+        password: 'admin123', 
         role: 'admin',
       });
       console.log('Admin user created');
@@ -32,7 +33,11 @@ mongoose.connect(monogourl).then(async () => {
 }).catch((err) => console.error("Database connection error:", err));
 
 app.use(cors());
-app.use(express.json()); // Replaces bodyParser.json()
+app.use(express.json()); 
+
+// 🎯 FIX 1: Make the 'uploads' folder publicly accessible.
+// It uses process.cwd() to correctly locate the 'uploads' folder in the root directory.
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // API Routes
 app.use("/api/users", userRouter);
