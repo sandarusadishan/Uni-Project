@@ -74,3 +74,15 @@ export function deleteUser(req, res) {
     });
   });
 }
+
+export function getAllUsers(req, res) {
+  User.find().then((users) => {
+    res.json(users);
+  });
+}
+
+export function getUserById(req, res) {
+  User.findById(req.params.id).then((user) => {
+    res.json(user);
+  });
+} 

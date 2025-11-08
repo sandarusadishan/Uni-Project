@@ -1,87 +1,43 @@
-//200 ok server code
-//500 server fault
-//400 client request fault
-//404 wrong address
-//403 othentication part is wrong
-
 import Product from "../models/product.js";
 
-export async function getProducts(req, res) {
+// ✅ Get all products
+export const getProducts = async (req, res) => {
   try {
-    const productList = await Product.find();
-    res.json({
-      list: productList,
-    });
-  } catch (e) {
-    res.json({
-      message: "Error",
-    });
+    const products = await Product.find();
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-}
-export function createProducts(req, res) {
-  console.log(req.user);
-  if (req.user == null) {
-    res.json({
-      message: "You aren't logged in",
-    });
-    return;
+};
+
+// ✅ Add new product
+export const addProduct = async (req, res) => {
+  try {
+    const { name, price, description, image, category } = req.body;
+    const newProduct = new Product({ name, price, description, image, category });
+    await newProduct.save();
+    res.status(201).json({ message: "Product added successfully", product: newProduct });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
+};
 
-  if (req.user.type != "admin") {
-    res.json({
-      message: "You are not admin",
-    });
-    return;
+// ✅ Delete product
+export const deleteProduct = async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Product deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-  const product = new Product(req.body);
-  product
-    .save()
-    .then(() => {
-      res.json({
-        message: "product created",
-      });
-    })
-    .catch(() => {
-      res.json({
-        message: "product not created",
-      });
-    });
-}
+};
 
-export function deleteProducts(req, res) {
-  Product.deleteOne({ name: req.params.name })
-    .then(() => {
-      res.json({
-        message: " product deleted successfully",
-      });
-    })
-    .catch(() => {
-      res.json({
-        message: "product not deleted",
-      });
-    });
-}
-
-export function getProductByName(req, res) {
-  const name = req.params.name;
-  // res.json({
-  //   message : "Product name is "+ name
-  // })
-  Product.find({ name: name })
-    .then((productList) => {
-      if (productList.length == 0) {
-        res.json({
-          message: "product not found",
-        });
-      } else {
-        res.json({
-          list: productList,
-        });
-      }
-    })
-    .catch(() => {
-      res.json({
-        message: "Error",
-      });
-    });
-}
+// ✅ Update product
+export const updateProduct = async (req, res) => {
+  try {
+    const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.status(200).json({ message: "Product updated", product: updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -1,10 +1,15 @@
 import mongoose from "mongoose";
 
-const productSchema = mongoose.Schema({
-  name: String,
-  price: Number,
-  description: String,
-});
-const Product = mongoose.model("products", productSchema);
+const productSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, unique: true },
+    price: { type: Number, required: true },
+    description: { type: String },
+    image: { type: String }, // image URL or Cloudinary link
+    category: { type: String },
+  },
+  { timestamps: true }
+);
 
+const Product = mongoose.model("Product", productSchema);
 export default Product;

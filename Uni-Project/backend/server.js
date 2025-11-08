@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import userRouter from "./routes/userRouter.js";
+import productRouter from "./routes/productRouter.js";
 import User from "./models/User.js"; // <-- Import the User model
 import dotenv from "dotenv";
 import cors from "cors";
@@ -33,7 +34,9 @@ mongoose.connect(monogourl).then(async () => {
 app.use(cors());
 app.use(express.json()); // Replaces bodyParser.json()
 
+// API Routes
 app.use("/api/users", userRouter);
+app.use("/api/products", productRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
