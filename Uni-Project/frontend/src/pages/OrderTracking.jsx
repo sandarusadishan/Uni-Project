@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Package, Truck, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, ArrowLeft, Phone } from 'lucide-react'; // Phone icon eka ekathu kara
 import Navbar from '../components/Navbar'; 
 import { useAuth } from '../contexts/AuthContext';
 
 const BASE_URL = 'http://localhost:3000';
 const API_URL = `${BASE_URL}/api`;
+const ADMIN_PHONE = '077 123 4567'; // 🎯 Admin contact number
 
 const OrderTracking = () => {
   const [orders, setOrders] = useState([]);
-  const { user, isAuthenticated } = useAuth(); // AuthContext eken user and token laba ganna
+  const { user, isAuthenticated } = useAuth(); 
 
   useEffect(() => {
     const fetchOrders = async () => {
-      // User logged in and has ID, otherwise cannot fetch orders
       if (!isAuthenticated || !user || !user._id) {
         setOrders([]);
         return; 
@@ -25,14 +25,15 @@ const OrderTracking = () => {
       try {
         const res = await fetch(`${API_URL}/orders/user/${user._id}`, {
           headers: {
-            Authorization: `Bearer ${user.token}`, // Auth token eka yawanna
+            Authorization: `Bearer ${user.token}`, 
           },
         });
 
         const data = await res.json();
 
         if (res.ok) {
-          setOrders(data); // Backend eken sort wela enawa
+          // Note: Backend eken totalAmount.toFixed(2) nethi nisa, TotalAmount ekat default value ekak danna.
+          setOrders(data); 
         } else {
           console.error('Failed to fetch orders:', data.message);
           setOrders([]);
@@ -76,6 +77,10 @@ const OrderTracking = () => {
     }
   };
 
+  const isCancellable = (status) => {
+    return status === 'pending' || status === 'preparing';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary text-foreground">
       <Navbar />
@@ -98,7 +103,7 @@ const OrderTracking = () => {
           <div className="space-y-8">
             {orders.map((order, index) => (
               <Card
-                key={order._id} // Backend ID eka use kirima
+                key={order._id}
                 className="p-6 transition-all duration-300 sm:p-8 glass hover:border-primary/50 hover:shadow-lg animate-fadeInUp"
                 style={{ animationDelay: `${index * 100}ms` }}
                 role="region"
@@ -148,9 +153,27 @@ const OrderTracking = () => {
                       <br />
                       <span className="font-semibold text-foreground">{order.address}</span>
                     </p>
-                    {/* 🎯 totalAmount use kirima (Backend Model එකට අනුව) */}
                     <p className="mt-4 sm:mt-0 text-2xl font-extrabold text-primary">LKR {order.totalAmount.toFixed(2)}</p> 
                   </div>
+                  
+                  {/* ✅ Order Cancelation Message */}
+                  {isCancellable(order.status) && (
+                      <div className="mt-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+                          <p className="text-sm font-semibold text-red-400 mb-2">
+                              🛑 Need to Cancel Order #{order._id.slice(-6)}?
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                              Order cancellation is only possible within the first 5 minutes. 
+                              **Please call the Admin immediately** to stop preparation!
+                          </p>
+                          <a href={`tel:${ADMIN_PHONE}`} className="mt-3 inline-block">
+                              <Button variant="destructive" size="sm" className="gap-2">
+                                  <Phone className="w-4 h-4" /> Call Admin Now!
+                              </Button>
+                          </a>
+                      </div>
+                  )}
+
                 </div>
               </Card>
             ))}

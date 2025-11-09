@@ -32,6 +32,9 @@ import {
 } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../hooks/use-toast"; 
+import RewardDashboard from "../components/RewardDashboard"; 
+import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog"; // Dialog Component
+
 
 // Define the base URLs
 const BASE_URL = "http://localhost:3000";
@@ -86,7 +89,6 @@ const AdminDashboard = () => {
   }, [selectedFile]);
 
   // --- Data Fetching Functions ---
-
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${API_URL}/products`);
@@ -153,7 +155,6 @@ const AdminDashboard = () => {
     setSelectedFile(file);
   };
   
-  // ✅ ADD PRODUCT FUNCTION (Token Added)
   const addProduct = async () => {
     if (!newProduct.name.trim() || !newProduct.price || !newProduct.category || !selectedFile) {
       return toast({
@@ -208,7 +209,6 @@ const AdminDashboard = () => {
     setImagePreviewUrl(null);
   };
   
-  // ✅ UPDATE PRODUCT FUNCTION (Token Added)
   const updateProduct = async () => { 
     if (!newProduct.name.trim() || !newProduct.price || !newProduct.category)
         return toast({title: "Missing fields", description: "Please enter valid product details.", variant: "destructive"});
@@ -246,13 +246,19 @@ const AdminDashboard = () => {
     setIsSaving(false);
   };
 
-  // ✅ DELETE PRODUCT FUNCTION (Token Added)
+  // ✅ Product Delete Logic (window.confirm removed)
   const deleteProduct = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    // Note: Confirmation is handled by the Dialog component UI.
+    const token = user?.token;
+    if (!token || user?.role !== 'admin') {
+      toast({title: "Access Denied", description: "Not authorized to delete products.", variant: "destructive"});
+      return;
+    }
+
     try {
       const res = await fetch(`${API_URL}/products/${id}`, { 
         method: "DELETE",
-        headers: { 'Authorization': `Bearer ${user?.token}` } // Token added
+        headers: { 'Authorization': `Bearer ${user?.token}` } 
       });
       if (res.ok) {
         toast({title: "🗑️ Deleted!", description: "Product deleted successfully."});
@@ -273,7 +279,7 @@ const AdminDashboard = () => {
     setImagePreviewUrl(null);
   };
 
-  // --- Order Status Management ---
+  // --- Order Status Management and Delete ---
 
   const updateOrderStatus = async (orderId, newStatus) => {
       const token = user?.token;
@@ -303,6 +309,33 @@ const AdminDashboard = () => {
           }
       } catch (error) {
           console.error('Status update error:', error);
+          toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive"});
+      }
+  };
+  
+  // Frontend Delete Order Function 
+  const deleteOrder = async (orderId) => {
+      const token = user?.token;
+      if (!token || user?.role !== 'admin') {
+          toast({title: "Access Denied", description: "Not authorized to delete orders.", variant: "destructive"});
+          return;
+      }
+
+      try {
+          const res = await fetch(`${API_URL}/orders/${orderId}`, { 
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (res.ok) {
+              toast({title: "🗑️ Deleted!", description: "Order deleted successfully."});
+              fetchOrders(); 
+          } else {
+              const data = await res.json();
+              toast({title: "❌ Error", description: data.message || 'Failed to delete order', variant: "destructive"});
+          }
+      } catch (error) {
+          console.error('Delete order error:', error);
           toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive"});
       }
   };
@@ -358,7 +391,7 @@ const AdminDashboard = () => {
               <TabsTrigger value="products">Products</TabsTrigger>
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="challenges">Challenges</TabsTrigger>
+              <TabsTrigger value="challenges">Rewards</TabsTrigger> 
             </TabsList>
 
             {/* PRODUCTS TAB */}
@@ -367,6 +400,7 @@ const AdminDashboard = () => {
                 {editingProduct ? "Edit Product" : "Add Product"}
               </h3>
               {/* Product Form UI */}
+              {/* ... (Form inputs) ... */}
               <div className="grid gap-4 md:grid-cols-3">
                 <Input
                   placeholder="Product Name"
@@ -415,7 +449,7 @@ const AdminDashboard = () => {
                 </Select>
               </div>
 
-              {/* Image Preview */}
+              {/* Image Preview and Buttons */}
               <div className="mt-4 flex flex-col md:flex-row gap-4 items-start">
                 {editingProduct && newProduct.image && !selectedFile && (
                   <div className="p-2 border rounded-md">
@@ -439,7 +473,6 @@ const AdminDashboard = () => {
                 )}
               </div>
 
-              {/* Buttons */}
               <div className="flex gap-2 mt-4">
                 {editingProduct ? (
                   <>
@@ -490,20 +523,21 @@ const AdminDashboard = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        onClick={() => deleteProduct(p._id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      
+                      {/* 🎯 Products Delete Button (Modern Dialog භාවිතයෙන්) */}
+                      <ConfirmDeleteDialog 
+                            orderId={p._id} // ID eka yawanawa
+                            orderSlice={p.name} // Order ID වෙනුවට Product Name පෙන්වන්න
+                            onConfirm={deleteProduct} 
+                            // Note: We use the same component but pass the product name/ID
+                        />
                     </div>
                   </Card>
                 ))}
               </div>
             </TabsContent>
 
-            {/* ORDERS TAB (නිවැරදි කරන ලදි) */}
+            {/* ORDERS TAB */}
             <TabsContent value="orders" className="mt-6">
               <h3 className="mb-4 text-xl font-bold">Recent Orders ({orders.length})</h3>
               {orders.length === 0 ? (
@@ -517,7 +551,6 @@ const AdminDashboard = () => {
                       <p className="text-sm text-muted-foreground">
                         Total: LKR {o.totalAmount?.toFixed(2)} | Customer:
                         <span className="font-semibold text-foreground block md:inline-block">
-                            {/* ✅ User Name Display Logic: o.userId object එකෙන් name කියවයි */}
                             {o.userId && typeof o.userId === 'object' 
                                 ? o.userId.name 
                                 : 'N/A'
@@ -545,11 +578,23 @@ const AdminDashboard = () => {
                                 <SelectItem value="delivered">Delivered</SelectItem>
                             </SelectContent>
                         </Select>
+                        {/* Order Delete Button (Modern Dialog භාවිතයෙන්) */}
+                        <ConfirmDeleteDialog 
+                            orderId={o._id}
+                            orderSlice={o._id.slice(-6)}
+                            onConfirm={deleteOrder} 
+                        />
                     </div>
                   </Card>
                 ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* CHALLENGES/REWARDS TAB */}
+            <TabsContent value="challenges" className="mt-6">
+              {/* ✅ Rewards Dashboard Component */}
+              <RewardDashboard />
             </TabsContent>
 
             {/* USERS TAB (unchanged) */}
@@ -578,14 +623,6 @@ const AdminDashboard = () => {
                   </Card>
                 ))
               )}
-            </TabsContent>
-
-            {/* CHALLENGES TAB (unchanged) */}
-            <TabsContent value="challenges" className="mt-6">
-              <h3 className="mb-4 text-xl font-bold">Manage Challenges</h3>
-              <p className="text-muted-foreground">
-                Coming soon — you can add daily challenges for users here.
-              </p>
             </TabsContent>
           </Tabs>
         </Card>

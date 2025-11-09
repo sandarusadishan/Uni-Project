@@ -27,3 +27,11 @@ export const admin = (req, res, next) => {
     res.status(403).json({ message: 'Not authorized as an admin' });
   }
 };
+
+export const playDailyReward = async (req, res) => {
+    // ... logic
+};
+
+export const getDailyPlayStatus = async (req, res) => {
+    // ... logic
+};

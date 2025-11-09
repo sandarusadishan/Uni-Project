@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "shadcn": "npx @shadcn/ui@latest",
+    "shadcn:add": "npx @shadcn/ui@latest add"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -26,6 +28,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.24",
+    "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.552.0",
