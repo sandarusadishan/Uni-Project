@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { User, Mail, Award, Package, Edit, Save, X, Upload, Loader2, Key } from 'lucide-react';
+import { User, Mail, Award, Package, Edit, Save, X, Upload, Loader2, Key, Trash2, ShoppingBag } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
 import { Badge } from '../components/ui/badge';
@@ -22,8 +22,8 @@ const Profile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  // ✅ Dynamic order count state
-  const [userTotalOrders, setUserTotalOrders] = useState('—'); 
+  // ✅ Order history and count state
+  const [userOrders, setUserOrders] = useState([]); 
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -42,24 +42,27 @@ const Profile = () => {
     if (user) setFormData({ name: user.name, email: user.email });
   }, [user]);
 
-  // ✅ Order Count Fetch Logic
+  // ✅ Order History Fetch Logic
   useEffect(() => {
-    const fetchOrderCount = async () => {
+    const fetchOrderHistory = async () => {
       if (!user || !user._id || !user.token) return;
       try {
-        // API call to get user's orders array
         const res = await fetch(`${API_URL}/orders/user/${user._id}`, {
           headers: { 'Authorization': `Bearer ${user.token}` },
         });
         const data = await res.json();
-        if (res.ok && Array.isArray(data)) setUserTotalOrders(data.length);
-        else setUserTotalOrders(0);
+        if (res.ok && Array.isArray(data)) {
+          // Sort orders by date, newest first
+          setUserOrders(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        } else {
+          setUserOrders([]);
+        }
       } catch (error) {
-        console.error('Error fetching order count:', error);
-        setUserTotalOrders(0);
+        console.error('Error fetching order history:', error);
+        setUserOrders([]);
       }
     };
-    if (user && user.token) fetchOrderCount();
+    if (user && user.token) fetchOrderHistory();
   }, [user]);
 
   // Preview URL for new image upload
@@ -86,8 +89,8 @@ const Profile = () => {
     try {
       const res = await fetch(`${API_URL}/users/${user._id}`, {
         method: 'PUT',
-        // Authorization token required for PUT requests
-        // headers: { 'Authorization': `Bearer ${user.token}` }, 
+        // ✅ Authorization token එකතු කළා
+        headers: { 'Authorization': `Bearer ${user.token}` }, 
         body: updateFormData,
       });
       const data = await res.json();
@@ -122,6 +125,42 @@ const Profile = () => {
     }
   };
 
+  // ✅ --- Profile Photo Removal Logic ---
+  const handleRemovePhoto = async () => {
+    if (!user || loading || !user.profileImage) return;
+    
+    // ✅ Use toast for confirmation (or a custom dialog component)
+    toast({ title: "Removing Photo...", description: "Please wait while we remove your profile picture." });
+    
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/users/${user._id}/profile-image`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${user.token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({
+          title: '🗑️ Photo Removed!',
+          description: 'Your profile picture has been removed.',
+          duration: 2000,
+        });
+        // Update context and local state
+        setUser((prev) => ({ ...prev, profileImage: data.user.profileImage }));
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      } else {
+        throw new Error(data.message || 'Failed to remove photo.');
+      }
+    } catch (error) {
+      console.error('Photo removal error:', error);
+      toast({ title: '❌ Error', description: error.message, variant: 'destructive', duration: 2000 });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   // --- Password Change Logic (Unchanged) ---
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -135,7 +174,10 @@ const Profile = () => {
     try {
       const res = await fetch(`${API_URL}/users/change-password/${user._id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` // ✅ Token එකතු කළා
+        },
         body: JSON.stringify({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword }),
       });
       const data = await res.json();
@@ -184,11 +226,12 @@ const Profile = () => {
   );
 
   const stats = [
-    { label: 'Loyalty Points', value: user.loyaltyPoints || 0, icon: Award, color: 'text-primary' },
-    { label: 'Total Orders', value: userTotalOrders, icon: Package, color: 'text-blue-500' }, // Dynamic count
+    { label: 'Loyalty Points', value: user.loyaltyPoints || 0, icon: Award, color: 'text-yellow-400' },
+    { label: 'Total Orders', value: userOrders.length, icon: Package, color: 'text-blue-400' }, // ✅ Dynamic count
     { 
       label: 'Member Since',
-      value: user.createdAt
+      // ✅ Month and Year format
+      value: user.memberSince
         ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         : 'N/A',
       icon: User,
@@ -277,6 +320,16 @@ const Profile = () => {
                         className="flex-1"
                       />
                     </div>
+                    {/* ✅ Remove Photo Button */}
+                    {user.profileImage && !previewUrl && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleRemovePhoto}
+                        className="w-full gap-2 mt-2"
+                        disabled={loading}
+                      ><Trash2 className="w-4 h-4" /> Remove Current Photo</Button>
+                    )}
                   </div>
 
                   <Button type="submit" className="w-full gap-2" disabled={loading}>
@@ -391,18 +444,25 @@ const Profile = () => {
           <div className="lg:col-span-1">
             <Card className="p-6 sm:p-8 glass sticky top-24">
               <h3 className="mb-4 text-lg sm:text-xl font-bold">Recent Activity</h3>
-              <div className="space-y-3 text-sm">
-                {[
-                  { title: 'Order Completed', time: '2 hours ago' },
-                  { title: 'Challenge Completed', time: '1 day ago' },
-                  { title: 'Badge Unlocked', time: '3 days ago' },
-                ].map((item, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-secondary">
-                    <p className="mb-1 font-semibold">{item.title}</p>
-                    <p className="text-muted-foreground">{item.time}</p>
-                  </div>
-                ))}
-              </div>
+              {/* ✅ Real Recent Activity */}
+              {userOrders.length > 0 ? (
+                <div className="space-y-3 text-sm">
+                  {userOrders.slice(0, 4).map((order) => (
+                    <div key={order._id} className="p-3 rounded-lg bg-secondary">
+                      <p className="font-semibold flex justify-between">
+                        <span>Order #{order._id.slice(-6)}</span>
+                        <span className="text-primary">LKR {order.totalAmount.toFixed(2)}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-4">
+                  <ShoppingBag className="w-8 h-8 mx-auto mb-2" />
+                  <p>No recent orders found.</p>
+                </div>
+              )}
             </Card>
           </div>
         </div>

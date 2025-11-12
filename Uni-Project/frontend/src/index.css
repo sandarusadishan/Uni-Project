@@ -101,6 +101,12 @@ All colors MUST be HSL.
     to { box-shadow: 0 0 25px 0px hsl(var(--primary) / 0.6); }
   }
 
+  /* ✅ Electric border animation සඳහා keyframe එක */
+  @keyframes spin-around {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
     font-family: 'Poppins', sans-serif;
@@ -159,5 +165,22 @@ All colors MUST be HSL.
 
   .category-card:hover .category-card-image {
     @apply scale-110;
+  }
+
+  /* ✅ Electric border effect එක සඳහා custom class එක */
+  .electric-border::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(transparent, transparent, transparent, hsl(var(--primary)));
+    animation: spin-around 4s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+  .electric-border:hover::before {
+    opacity: 1;
   }
 }

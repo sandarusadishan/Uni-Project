@@ -54,7 +54,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
     
   return (
-    <AuthContext.Provider value={useMemo(() => ({ user, login, register, logout, isAuthenticated: !!user?.token }), [user, login, register, logout])}>
+    <AuthContext.Provider value={useMemo(() => ({ 
+        user, setUser, // ✅ setUser function එක context එකට එකතු කරන ලදී
+        login, register, logout, isAuthenticated: !!user?.token 
+    }), [user, login, register, logout, setUser])}>
       {children}
     </AuthContext.Provider>
   );

@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
-import { ShoppingCart, Search } from 'lucide-react';
+import { ShoppingCart, Search, Check, XCircle } from 'lucide-react'; // ✅ Icons එකතු කළා
 import Navbar from '../components/Navbar';
 import { useCart } from '../contexts/CartContext';
 import { useToast } from '../hooks/use-toast';
@@ -21,48 +21,87 @@ import {
 const BASE_URL = "http://localhost:3000";
 const API_URL = `${BASE_URL}/api`;
 
-const containerVariants = { /* ... unchanged ... */ };
-const itemVariants = { /* ... unchanged ... */ };
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }, // ✅ Animation එක smooth කළා
+  },
+};
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } },
+};
 
-// 🍔 BurgerCard Component (unchanged)
-const BurgerCard = ({ product, onAddToCart }) => ( /* ... uses product.category ... */
-  <motion.div
+
+// 🍔 BurgerCard Component
+const BurgerCard = ({ product, onAddToCart }) => {
+  const [isAdded, setIsAdded] = useState(false);
+
+  const handleAddToCartClick = () => {
+    onAddToCart(product);
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000); // Reset after 2 seconds
+  };
+
+  return (
+    <motion.div
+    // ✅ 3D effect එක සඳහා perspective එකතු කළා
+    className="flex [perspective:800px]"
     variants={itemVariants}
-    whileHover={{ scale: 1.05, boxShadow: '0px 6px 20px rgba(255, 209, 102, 0.3)' }}
-    transition={{ type: 'spring', stiffness: 300 }}
-  >
-    <Card className="overflow-hidden transition-all duration-300 border-transparent glass group hover:shadow-primary/20 hover:border-primary/30">
-      <div className="relative">
+    >
+    {/* ✅ Electric border effect එක සහ 3D effect එක එකතු කළා */}
+    <Card className="relative flex flex-col w-full h-full overflow-hidden transition-all duration-500 border-transparent glass group hover:shadow-primary/20 [transform-style:preserve-3d] hover:[transform:rotateY(10deg)_rotateX(5deg)] electric-border">
+      <div className="relative overflow-hidden rounded-t-lg">
         <img
           src={`${BASE_URL}${product.image}`}
           alt={product.name}
-          className="object-cover w-full h-56 transition-transform duration-300 group-hover:scale-110"
+          // ✅ Image එකට 3D hover effect එකක් ලබා දුන්නා
+          className="object-cover w-full h-56 transition-transform duration-500 ease-in-out group-hover:scale-125 group-hover:[transform:translateZ(20px)]"
         />
         <div className="absolute top-2 right-2">
           <Badge variant="secondary" className="text-xs select-none">
             {product.category}
           </Badge>
         </div>
+        {/* ✅ 3D effect එක සඳහා අමතර layer එකක් */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
       </div>
-      <div className="p-4 space-y-3">
+      {/* ✅ Card content එකට 3D hover effect එකක් ලබා දුන්නා */}
+      <div className="flex flex-col flex-grow p-4 space-y-3 transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:translateZ(30px)]">
         <h3 className="text-xl font-bold truncate">{product.name}</h3>
-        <p className="text-sm text-muted-foreground h-10">{product.description}</p>
-        <div className="flex items-end justify-between pt-2">
-          <span className="text-2xl font-bold text-primary">
+        <p className="flex-grow text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+        {/* ✅ Layout එක fix කර, 3D effect එකක් එකතු කළා */}
+        <div className="flex items-end justify-between pt-2 mt-auto flex-nowrap [transform-style:preserve-3d]">
+          <span className="text-xl font-bold text-primary whitespace-nowrap transition-transform duration-500 group-hover:[transform:translateZ(40px)]">
             LKR {Number(product.price).toFixed(2)}
           </span>
           <Button
-            onClick={() => onAddToCart(product)}
-            className="gap-2 flex items-center justify-center bg-gradient-to-tr from-yellow-400 to-yellow-300 hover:from-yellow-300 hover:to-yellow-400 transition-colors"
+            onClick={handleAddToCartClick}
+            disabled={isAdded}
+            className={`gap-2 flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:[transform:translateZ(40px)] ${
+              isAdded
+                ? 'bg-green-600 hover:bg-green-700 w-28' // ✅ Added state style
+                : 'gold-glow w-24'
+            }`}
           >
-            <ShoppingCart className="w-4 h-4" />
-            Add
+            {isAdded ? (
+              <>
+                <Check className="w-4 h-4" /> Added!
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4" /> Add
+              </>
+            )}
           </Button>
         </div>
       </div>
     </Card>
   </motion.div>
-);
+  );
+};
+
 
 // 🍔 Main Menu Page
 const Menu = () => {
@@ -124,19 +163,44 @@ const Menu = () => {
     toast({ title: `${product.name} added to cart!`, duration: 2000 });
   };
 
-  // 🎯 Loading/Error UI (unchanged)
+  // ✅ Skeleton Loader Component
+  const SkeletonCard = () => (
+    <div className="p-4 space-y-3 rounded-lg glass">
+      <div className="w-full h-56 rounded-md bg-muted animate-pulse"></div>
+      <div className="w-3/4 h-6 rounded bg-muted animate-pulse"></div>
+      <div className="w-full h-4 rounded bg-muted animate-pulse"></div>
+      <div className="w-1/2 h-4 rounded bg-muted animate-pulse"></div>
+      <div className="flex items-center justify-between pt-2">
+        <div className="w-1/3 h-8 rounded bg-muted animate-pulse"></div>
+        <div className="w-1/4 h-10 rounded bg-muted animate-pulse"></div>
+      </div>
+    </div>
+  );
+
+  // 🎯 Loading/Error UI
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-secondary">
-        <p className="text-xl font-semibold">Loading delicious burgers...</p>
+      <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
+        <Navbar />
+        <main className="container px-4 py-8 mx-auto">
+          {/* Placeholder for header and filters */}
+          <div className="w-full h-48 mb-8 rounded-md bg-background/30 animate-pulse"></div>
+          {/* ✅ Skeleton Grid */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        </main>
       </div>
     );
   }
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-secondary">
-        <p className="text-xl font-semibold text-red-500">{error}</p>
-      </div>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary text-center">
+            <XCircle className="w-16 h-16 text-red-500 mb-4" />
+            <h2 className="text-3xl font-bold mb-2">Oops! Something went wrong.</h2>
+            <p className="text-xl font-semibold text-red-400">{error}</p>
+            <p className="mt-4 text-muted-foreground">Please try refreshing the page or check if the server is running.</p>
+        </div>
     );
   }
 
@@ -199,17 +263,28 @@ const Menu = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          // ✅ Grid එකට items 5ක් එන ලෙස වෙනස් කළා
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
         >
           {filteredProducts.map((product) => (
-            <BurgerCard key={product._id} product={product} onAddToCart={handleAddToCart} />
+            <BurgerCard key={product._id} product={product} onAddToCart={handleAddToCart}/>
           ))}
         </motion.div>
 
-        {/* 🪶 Empty State */}
-        {filteredProducts.length === 0 && (
-          <div className="py-20 text-center">
-            <p className="text-2xl text-muted-foreground">No menu items found</p>
+        {/* ✅ Engaging Empty State */}
+        {filteredProducts.length === 0 && !loading && (
+          <div className="py-20 text-center col-span-full">
+            <XCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-2xl font-bold">No Burgers Found</h3>
+            <p className="mt-2 text-muted-foreground">
+              Your search for "{search}" in "{category}" didn't return any results.
+            </p>
+            <Button 
+              variant="outline" 
+              className="mt-6" 
+              onClick={() => { setSearch(''); setCategory('all'); }}>
+              Clear All Filters
+            </Button>
           </div>
         )}
       </main>
