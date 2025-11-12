@@ -1,10 +1,11 @@
-import React from "react"; 
+import React from "react";
 import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/toolip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import WhatsAppButton from "./components/WhatsAppButton"; // ✅ WhatsApp Button එක import කළා
 import { CartProvider } from "./contexts/CartContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -55,6 +56,7 @@ const App = () => (
               
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <WhatsAppButton /> {/* ✅ WhatsApp Button එක මෙතනට එකතු කළා */}
           </BrowserRouter>
         </CartProvider>
       </AuthProvider>

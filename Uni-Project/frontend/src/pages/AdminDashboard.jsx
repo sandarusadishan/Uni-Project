@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import io from 'socket.io-client'; // ✅ Socket.IO client
+import io from "socket.io-client"; // ✅ Socket.IO client
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import {
@@ -21,7 +21,7 @@ import {
   X,
   Upload,
   Loader2,
-  Bell // ✅ Bell icon
+  Bell, // ✅ Bell icon
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { Input } from "../components/ui/input";
@@ -33,8 +33,8 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
-import { useToast } from "../hooks/use-toast"; 
-import RewardDashboard from "../components/RewardDashboard"; 
+import { useToast } from "../hooks/use-toast";
+import RewardDashboard from "../components/RewardDashboard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +44,6 @@ import {
 } from "../components/ui/dropdown-menu";
 import { Badge } from "../components/ui/badge";
 import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog"; // Dialog Component
-
 
 // Define the base URLs
 const BASE_URL = "http://localhost:3000";
@@ -57,17 +56,21 @@ const FIXED_CATEGORIES = [
   "spicy",
   "side",
   "drink",
+  "burgers",
+  "dessert",
+  "specials",
+  "submarines",
 ];
 
 const AdminDashboard = () => {
   const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]); 
+  const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [isSaving, setIsSaving] = useState(false); 
-  
-  const { user } = useAuth(); 
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { user } = useAuth();
   const { toast } = useToast();
 
   // ✅ Notification State
@@ -85,37 +88,39 @@ const AdminDashboard = () => {
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
 
   useEffect(() => {
-    if (user && user.token && user.role === 'admin') { 
-        fetchProducts();
-        fetchUsers();
-        fetchOrders(); 
+    if (user && user.token && user.role === "admin") {
+      fetchProducts();
+      fetchUsers();
+      fetchOrders();
 
-        // ✅ Socket.IO Connection
-        const socket = io(BASE_URL);
+      // ✅ Socket.IO Connection
+      const socket = io(BASE_URL);
 
-        // Admin බව server එකට දැනුම් දීම
-        socket.emit('join_admin_room');
+      // Admin බව server එකට දැනුම් දීම
+      socket.emit("join_admin_room");
 
-        // 'new_order' event එකට සවන් දීම
-        socket.on('new_order', (notification) => {
-            console.log('New Order Notification Received:', notification);
-            
-            // UI එකේ notification එක පෙන්වීම
-            toast({
-                title: "🔔 New Order Received!",
-                description: `Order #${notification.orderId.slice(-6)} for LKR ${notification.totalAmount.toFixed(2)}`,
-                duration: 5000,
-            });
+      // 'new_order' event එකට සවන් දීම
+      socket.on("new_order", (notification) => {
+        console.log("New Order Notification Received:", notification);
 
-            // Notification list එකට එකතු කිරීම
-            setNotifications(prev => [notification, ...prev]);
-            setShowNotificationDot(true);
-
-            // Order list එක refresh කිරීම
-            fetchOrders();
+        // UI එකේ notification එක පෙන්වීම
+        toast({
+          title: "🔔 New Order Received!",
+          description: `Order #${notification.orderId.slice(
+            -6
+          )} for LKR ${notification.totalAmount.toFixed(2)}`,
+          duration: 5000,
         });
 
-        return () => socket.disconnect(); // Component unmount වන විට connection එක විසන්ධි කිරීම
+        // Notification list එකට එකතු කිරීම
+        setNotifications((prev) => [notification, ...prev]);
+        setShowNotificationDot(true);
+
+        // Order list එක refresh කිරීම
+        fetchOrders();
+      });
+
+      return () => socket.disconnect(); // Component unmount වන විට connection එක විසන්ධි කිරීම
     }
   }, [user]);
 
@@ -151,8 +156,8 @@ const AdminDashboard = () => {
 
     try {
       const res = await fetch(`${API_URL}/users`, {
-          headers: { 'Authorization': `Bearer ${token}` } 
-      }); 
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       if (res.ok && Array.isArray(data)) {
         setUsers(data);
@@ -172,21 +177,21 @@ const AdminDashboard = () => {
 
     try {
       const res = await fetch(`${API_URL}/orders`, {
-          headers: {
-            'Authorization': `Bearer ${token}` 
-          }
-      }); 
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
-      
-      if (res.ok && Array.isArray(data)) { 
+
+      if (res.ok && Array.isArray(data)) {
         setOrders(data);
       } else {
         console.error("Orders API failed or did not return an array:", data);
-        setOrders([]); 
+        setOrders([]);
       }
     } catch (error) {
       console.error("Error loading orders:", error);
-      setOrders([]); 
+      setOrders([]);
     }
   };
 
@@ -195,9 +200,14 @@ const AdminDashboard = () => {
     const file = e.target.files[0];
     setSelectedFile(file);
   };
-  
+
   const addProduct = async () => {
-    if (!newProduct.name.trim() || !newProduct.price || !newProduct.category || !selectedFile) {
+    if (
+      !newProduct.name.trim() ||
+      !newProduct.price ||
+      !newProduct.category ||
+      !selectedFile
+    ) {
       return toast({
         title: "Missing fields",
         description: "Please enter all product details and select an image.",
@@ -213,31 +223,46 @@ const AdminDashboard = () => {
     formData.append("description", newProduct.description);
     formData.append("category", newProduct.category);
     formData.append("imageFile", selectedFile);
-    
-    try {
-        const res = await fetch(`${API_URL}/products`, { 
-            method: "POST", 
-            body: formData, 
-            headers: { 'Authorization': `Bearer ${user?.token}` } 
-        });
-        const data = await res.json();
 
-        if (res.ok) {
-            toast({title: "✅ Success!", description: "Product added successfully.", duration: 2000});
-            setNewProduct({ name: "", price: "", description: "", category: "" });
-            setSelectedFile(null);
-            setImagePreviewUrl(null);
-            fetchProducts();
-        } else {
-            toast({title: "❌ Error", description: data.message || "Error adding product. Check server logs.", variant: "destructive", duration: 2000});
-        }
+    try {
+      const res = await fetch(`${API_URL}/products`, {
+        method: "POST",
+        body: formData,
+        headers: { Authorization: `Bearer ${user?.token}` },
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: "✅ Success!",
+          description: "Product added successfully.",
+          duration: 2000,
+        });
+        setNewProduct({ name: "", price: "", description: "", category: "" });
+        setSelectedFile(null);
+        setImagePreviewUrl(null);
+        fetchProducts();
+      } else {
+        toast({
+          title: "❌ Error",
+          description:
+            data.message || "Error adding product. Check server logs.",
+          variant: "destructive",
+          duration: 2000,
+        });
+      }
     } catch (error) {
-        console.error("Error:", error);
-        toast({title: "Server Error", description: "Could not connect to server.", variant: "destructive", duration: 2000});
+      console.error("Error:", error);
+      toast({
+        title: "Server Error",
+        description: "Could not connect to server.",
+        variant: "destructive",
+        duration: 2000,
+      });
     }
     setIsSaving(false);
   };
-  
+
   const startEditing = (product) => {
     setEditingProduct(product._id);
     setNewProduct({
@@ -250,10 +275,15 @@ const AdminDashboard = () => {
     setSelectedFile(null);
     setImagePreviewUrl(null);
   };
-  
-  const updateProduct = async () => { 
+
+  const updateProduct = async () => {
     if (!newProduct.name.trim() || !newProduct.price || !newProduct.category)
-        return toast({title: "Missing fields", description: "Please enter valid product details.", variant: "destructive", duration: 2000});
+      return toast({
+        title: "Missing fields",
+        description: "Please enter valid product details.",
+        variant: "destructive",
+        duration: 2000,
+      });
 
     setIsSaving(true);
     const formData = new FormData();
@@ -265,25 +295,39 @@ const AdminDashboard = () => {
     if (selectedFile) {
       formData.append("imageFile", selectedFile);
     }
-    
-    try {
-        const res = await fetch(`${API_URL}/products/${editingProduct}`, { 
-            method: "PUT", 
-            body: formData, 
-            headers: { 'Authorization': `Bearer ${user?.token}` } // Token added
-        });
-        const data = await res.json();
 
-        if (res.ok) {
-            toast({title: "✅ Success!", description: "Product updated successfully.", duration: 2000});
-            cancelEdit();
-            fetchProducts();
-        } else {
-            toast({title: "❌ Error", description: data.message || "Error updating product", variant: "destructive", duration: 2000});
-        }
+    try {
+      const res = await fetch(`${API_URL}/products/${editingProduct}`, {
+        method: "PUT",
+        body: formData,
+        headers: { Authorization: `Bearer ${user?.token}` }, // Token added
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+          title: "✅ Success!",
+          description: "Product updated successfully.",
+          duration: 2000,
+        });
+        cancelEdit();
+        fetchProducts();
+      } else {
+        toast({
+          title: "❌ Error",
+          description: data.message || "Error updating product",
+          variant: "destructive",
+          duration: 2000,
+        });
+      }
     } catch (error) {
-        console.error("Update error:", error);
-        toast({title: "Server Error", description: "Could not connect to server.", variant: "destructive", duration: 2000});
+      console.error("Update error:", error);
+      toast({
+        title: "Server Error",
+        description: "Could not connect to server.",
+        variant: "destructive",
+        duration: 2000,
+      });
     }
     setIsSaving(false);
   };
@@ -292,22 +336,36 @@ const AdminDashboard = () => {
   const deleteProduct = async (id) => {
     // Note: Confirmation is handled by the Dialog component UI.
     const token = user?.token;
-    if (!token || user?.role !== 'admin') {
-      toast({title: "Access Denied", description: "Not authorized to delete products.", variant: "destructive", duration: 2000});
+    if (!token || user?.role !== "admin") {
+      toast({
+        title: "Access Denied",
+        description: "Not authorized to delete products.",
+        variant: "destructive",
+        duration: 2000,
+      });
       return;
     }
 
     try {
-      const res = await fetch(`${API_URL}/products/${id}`, { 
+      const res = await fetch(`${API_URL}/products/${id}`, {
         method: "DELETE",
-        headers: { 'Authorization': `Bearer ${user?.token}` } 
+        headers: { Authorization: `Bearer ${user?.token}` },
       });
       if (res.ok) {
-        toast({title: "🗑️ Deleted!", description: "Product deleted successfully.", duration: 2000});
+        toast({
+          title: "🗑️ Deleted!",
+          description: "Product deleted successfully.",
+          duration: 2000,
+        });
         fetchProducts();
       } else {
         const data = await res.json();
-        toast({title: "❌ Error", description: data.message || "Failed to delete product", variant: "destructive", duration: 2000});
+        toast({
+          title: "❌ Error",
+          description: data.message || "Failed to delete product",
+          variant: "destructive",
+          duration: 2000,
+        });
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -316,7 +374,13 @@ const AdminDashboard = () => {
 
   const cancelEdit = () => {
     setEditingProduct(null);
-    setNewProduct({ name: "", price: "", image: "", description: "", category: "" });
+    setNewProduct({
+      name: "",
+      price: "",
+      image: "",
+      description: "",
+      category: "",
+    });
     setSelectedFile(null);
     setImagePreviewUrl(null);
   };
@@ -324,86 +388,153 @@ const AdminDashboard = () => {
   // --- Order Status Management and Delete ---
 
   const updateOrderStatus = async (orderId, newStatus) => {
-      const token = user?.token;
-      if (!token || user?.role !== 'admin') {
-          toast({title: "Access Denied", description: "Not authorized to change status.", variant: "destructive", duration: 2000});
-          return;
+    const token = user?.token;
+    if (!token || user?.role !== "admin") {
+      toast({
+        title: "Access Denied",
+        description: "Not authorized to change status.",
+        variant: "destructive",
+        duration: 2000,
+      });
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Change status of Order #${orderId.slice(-6)} to ${newStatus}?`
+      )
+    )
+      return;
+
+    try {
+      const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newStatus }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "✅ Updated",
+          description: `Status changed to ${newStatus}`,
+          duration: 2000,
+        });
+        fetchOrders();
+      } else {
+        const data = await res.json();
+        toast({
+          title: "❌ Error",
+          description: data.message || "Failed to update status",
+          variant: "destructive",
+          duration: 2000,
+        });
       }
-
-      if (!window.confirm(`Change status of Order #${orderId.slice(-6)} to ${newStatus}?`)) return;
-
-      try {
-          const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
-              method: 'PUT',
-              headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`, 
-              },
-              body: JSON.stringify({ newStatus }),
-          });
-
-          if (res.ok) {
-              toast({title: "✅ Updated", description: `Status changed to ${newStatus}`, duration: 2000});
-              fetchOrders(); 
-          } else {
-              const data = await res.json();
-              toast({title: "❌ Error", description: data.message || 'Failed to update status', variant: "destructive", duration: 2000});
-          }
-      } catch (error) {
-          console.error('Status update error:', error);
-          toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive", duration: 2000});
-      }
+    } catch (error) {
+      console.error("Status update error:", error);
+      toast({
+        title: "Server Error",
+        description: "Error connecting to API.",
+        variant: "destructive",
+        duration: 2000,
+      });
+    }
   };
-  
-  // Frontend Delete Order Function 
+
+  // Frontend Delete Order Function
   const deleteOrder = async (orderId) => {
-      const token = user?.token;
-      if (!token || user?.role !== 'admin') {
-          toast({title: "Access Denied", description: "Not authorized to delete orders.", variant: "destructive", duration: 2000});
-          return;
-      }
+    const token = user?.token;
+    if (!token || user?.role !== "admin") {
+      toast({
+        title: "Access Denied",
+        description: "Not authorized to delete orders.",
+        variant: "destructive",
+        duration: 2000,
+      });
+      return;
+    }
 
-      try {
-          const res = await fetch(`${API_URL}/orders/${orderId}`, { 
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${token}` },
-          });
+    try {
+      const res = await fetch(`${API_URL}/orders/${orderId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-          if (res.ok) {
-              toast({title: "🗑️ Deleted!", description: "Order deleted successfully.", duration: 2000});
-              fetchOrders(); 
-          } else {
-              const data = await res.json();
-              toast({title: "❌ Error", description: data.message || 'Failed to delete order', variant: "destructive", duration: 2000});
-          }
-      } catch (error) {
-          console.error('Delete order error:', error);
-          toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive", duration: 2000});
+      if (res.ok) {
+        toast({
+          title: "🗑️ Deleted!",
+          description: "Order deleted successfully.",
+          duration: 2000,
+        });
+        fetchOrders();
+      } else {
+        const data = await res.json();
+        toast({
+          title: "❌ Error",
+          description: data.message || "Failed to delete order",
+          variant: "destructive",
+          duration: 2000,
+        });
       }
+    } catch (error) {
+      console.error("Delete order error:", error);
+      toast({
+        title: "Server Error",
+        description: "Error connecting to API.",
+        variant: "destructive",
+        duration: 2000,
+      });
+    }
   };
-
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-      case 'preparing': return 'bg-primary/10 text-primary border-primary/20';
-      case 'on-the-way': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'delivered': return 'bg-green-500/10 text-green-400 border-green-500/20';
-      default: return 'bg-muted text-muted-foreground border-border';
+      case "pending":
+        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+      case "preparing":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "on-the-way":
+        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case "delivered":
+        return "bg-green-500/10 text-green-400 border-green-500/20";
+      default:
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
   const totalRevenue = useMemo(() => {
     return orders
-        .filter(order => order.status === 'delivered')
-        .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+      .filter((order) => order.status === "delivered")
+      .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
   }, [orders]);
 
   const stats = [
-    { label: "Products", value: products.length, icon: Package, color: "text-blue-500" },
-    { label: "Orders", value: orders.length, icon: DollarSign, color: "text-green-500" },
-    { label: "Users", value: users.length, icon: Users, color: "text-orange-500" },
-    { label: "Revenue", value: `LKR ${totalRevenue.toFixed(2)}`, icon: TrendingUp, color: "text-purple-500" },
+    {
+      label: "Products",
+      value: products.length,
+      icon: Package,
+      color: "text-blue-500",
+    },
+    {
+      label: "Orders",
+      value: orders.length,
+      icon: DollarSign,
+      color: "text-green-500",
+    },
+    {
+      label: "Users",
+      value: users.length,
+      icon: Users,
+      color: "text-orange-500",
+    },
+    {
+      label: "Revenue",
+      value: `LKR ${totalRevenue.toFixed(2)}`,
+      icon: TrendingUp,
+      color: "text-purple-500",
+    },
   ];
 
   // -----------------------------------------------------------------------------------
@@ -420,15 +551,22 @@ const AdminDashboard = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="relative">
                   <Bell className="w-5 h-5" />
-                  {showNotificationDot && <span className="absolute top-0 right-0 block w-2 h-2 bg-red-500 rounded-full" />}
+                  {showNotificationDot && (
+                    <span className="absolute top-0 right-0 block w-2 h-2 bg-red-500 rounded-full" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80">
-                <div className="p-2 font-bold">Notifications ({notifications.length})</div>
+                <div className="p-2 font-bold">
+                  Notifications ({notifications.length})
+                </div>
                 <DropdownMenuSeparator />
                 {notifications.length > 0 ? (
-                  notifications.slice(0, 5).map(n => (
-                    <DropdownMenuItem key={n.orderId} className="flex flex-col items-start gap-1">
+                  notifications.slice(0, 5).map((n) => (
+                    <DropdownMenuItem
+                      key={n.orderId}
+                      className="flex flex-col items-start gap-1"
+                    >
                       <p className="font-semibold">{n.message}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(n.timestamp).toLocaleTimeString()}
@@ -436,12 +574,16 @@ const AdminDashboard = () => {
                     </DropdownMenuItem>
                   ))
                 ) : (
-                  <p className="p-4 text-sm text-center text-muted-foreground">No new notifications.</p>
+                  <p className="p-4 text-sm text-center text-muted-foreground">
+                    No new notifications.
+                  </p>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline"><Settings className="w-4 h-4 mr-2" /> Settings</Button>
+            <Button variant="outline">
+              <Settings className="w-4 h-4 mr-2" /> Settings
+            </Button>
           </div>
         </div>
 
@@ -465,7 +607,7 @@ const AdminDashboard = () => {
               <TabsTrigger value="products">Products</TabsTrigger>
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="challenges">Rewards</TabsTrigger> 
+              <TabsTrigger value="challenges">Rewards</TabsTrigger>
             </TabsList>
 
             {/* PRODUCTS TAB */}
@@ -479,13 +621,17 @@ const AdminDashboard = () => {
                 <Input
                   placeholder="Product Name"
                   value={newProduct.name}
-                  onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewProduct({ ...newProduct, name: e.target.value })
+                  }
                 />
                 <Input
                   placeholder="Price (LKR)"
                   type="number"
                   value={newProduct.price}
-                  onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                  onChange={(e) =>
+                    setNewProduct({ ...newProduct, price: e.target.value })
+                  }
                 />
                 <div className="flex items-center space-x-2">
                   <Input
@@ -504,11 +650,18 @@ const AdminDashboard = () => {
                 <Input
                   placeholder="Description"
                   value={newProduct.description}
-                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  onChange={(e) =>
+                    setNewProduct({
+                      ...newProduct,
+                      description: e.target.value,
+                    })
+                  }
                 />
                 <Select
                   value={newProduct.category}
-                  onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
+                  onValueChange={(value) =>
+                    setNewProduct({ ...newProduct, category: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select Category" />
@@ -537,7 +690,9 @@ const AdminDashboard = () => {
                 )}
                 {imagePreviewUrl && (
                   <div className="p-2 border rounded-md">
-                    <p className="text-sm font-semibold mb-1">New Image Preview:</p>
+                    <p className="text-sm font-semibold mb-1">
+                      New Image Preview:
+                    </p>
                     <img
                       src={imagePreviewUrl}
                       alt="New Image Preview"
@@ -551,16 +706,28 @@ const AdminDashboard = () => {
                 {editingProduct ? (
                   <>
                     <Button onClick={updateProduct} disabled={isSaving}>
-                      {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                      {isSaving ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
                       {isSaving ? "Saving..." : "Save Changes"}
                     </Button>
-                    <Button variant="secondary" onClick={cancelEdit} disabled={isSaving}>
+                    <Button
+                      variant="secondary"
+                      onClick={cancelEdit}
+                      disabled={isSaving}
+                    >
                       <X className="w-4 h-4 mr-2" /> Cancel
                     </Button>
                   </>
                 ) : (
                   <Button onClick={addProduct} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                    {isSaving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
                     {isSaving ? "Adding..." : "Add Product"}
                   </Button>
                 )}
@@ -572,7 +739,10 @@ const AdminDashboard = () => {
                   <p className="text-muted-foreground">No products yet.</p>
                 )}
                 {products.map((p) => (
-                  <Card key={p._id} className="p-4 flex justify-between items-center">
+                  <Card
+                    key={p._id}
+                    className="p-4 flex justify-between items-center"
+                  >
                     <div className="flex items-center gap-4">
                       {p.image && (
                         <img
@@ -583,7 +753,9 @@ const AdminDashboard = () => {
                       )}
                       <div>
                         <p className="font-bold">{p.name}</p>
-                        <p className="text-sm text-muted-foreground">LKR {p.price}</p>
+                        <p className="text-sm text-muted-foreground">
+                          LKR {p.price}
+                        </p>
                         {p.category && (
                           <p className="text-xs text-gray-500">{p.category}</p>
                         )}
@@ -597,14 +769,14 @@ const AdminDashboard = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      
+
                       {/* 🎯 Products Delete Button (Modern Dialog භාවිතයෙන්) */}
-                      <ConfirmDeleteDialog 
-                            orderId={p._id} // ID eka yawanawa
-                            orderSlice={p.name} // Order ID වෙනුවට Product Name පෙන්වන්න
-                            onConfirm={deleteProduct} 
-                            // Note: We use the same component but pass the product name/ID
-                        />
+                      <ConfirmDeleteDialog
+                        orderId={p._id} // ID eka yawanawa
+                        orderSlice={p.name} // Order ID වෙනුවට Product Name පෙන්වන්න
+                        onConfirm={deleteProduct}
+                        // Note: We use the same component but pass the product name/ID
+                      />
                     </div>
                   </Card>
                 ))}
@@ -613,54 +785,68 @@ const AdminDashboard = () => {
 
             {/* ORDERS TAB */}
             <TabsContent value="orders" className="mt-6">
-              <h3 className="mb-4 text-xl font-bold">Recent Orders ({orders.length})</h3>
+              <h3 className="mb-4 text-xl font-bold">
+                Recent Orders ({orders.length})
+              </h3>
               {orders.length === 0 ? (
                 <p className="text-muted-foreground">No orders yet.</p>
               ) : (
                 <div className="space-y-4">
-                {orders.map((o) => (
-                  <Card key={o._id} className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex-1">
-                      <p className="font-bold text-lg">Order #{o._id.slice(-6)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Total: LKR {o.totalAmount?.toFixed(2)} | Customer:
-                        <span className="font-semibold text-foreground block md:inline-block">
-                            {o.userId && typeof o.userId === 'object' 
-                                ? o.userId.name 
-                                : 'N/A'
-                            }
-                        </span>
-                      </p>
-                      <p className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block capitalize ${getStatusColor(o.status)}`}>
-                        {o.status.replace('-', ' ')}
-                      </p>
-                    </div>
-
-                    {/* Status Update Dropdown/Buttons */}
-                    <div className="flex items-center gap-2">
-                        <Select
-                            value={o.status}
-                            onValueChange={(newStatus) => updateOrderStatus(o._id, newStatus)}
+                  {orders.map((o) => (
+                    <Card
+                      key={o._id}
+                      className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                    >
+                      <div className="flex-1">
+                        <p className="font-bold text-lg">
+                          Order #{o._id.slice(-6)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Total: LKR {o.totalAmount?.toFixed(2)} | Customer:
+                          <span className="font-semibold text-foreground block md:inline-block">
+                            {o.userId && typeof o.userId === "object"
+                              ? o.userId.name
+                              : "N/A"}
+                          </span>
+                        </p>
+                        <p
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block capitalize ${getStatusColor(
+                            o.status
+                          )}`}
                         >
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Update Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="preparing">Preparing</SelectItem>
-                                <SelectItem value="on-the-way">On The Way</SelectItem>
-                                <SelectItem value="delivered">Delivered</SelectItem>
-                            </SelectContent>
+                          {o.status.replace("-", " ")}
+                        </p>
+                      </div>
+
+                      {/* Status Update Dropdown/Buttons */}
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={o.status}
+                          onValueChange={(newStatus) =>
+                            updateOrderStatus(o._id, newStatus)
+                          }
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Update Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="preparing">Preparing</SelectItem>
+                            <SelectItem value="on-the-way">
+                              On The Way
+                            </SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                          </SelectContent>
                         </Select>
                         {/* Order Delete Button (Modern Dialog භාවිතයෙන්) */}
-                        <ConfirmDeleteDialog 
-                            orderId={o._id}
-                            orderSlice={o._id.slice(-6)}
-                            onConfirm={deleteOrder} 
+                        <ConfirmDeleteDialog
+                          orderId={o._id}
+                          orderSlice={o._id.slice(-6)}
+                          onConfirm={deleteOrder}
                         />
-                    </div>
-                  </Card>
-                ))}
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               )}
             </TabsContent>
@@ -678,7 +864,10 @@ const AdminDashboard = () => {
                 <p className="text-muted-foreground">No users found.</p>
               ) : (
                 users.map((u) => (
-                  <Card key={u._id} className="p-4 flex justify-between mb-2 items-center">
+                  <Card
+                    key={u._id}
+                    className="p-4 flex justify-between mb-2 items-center"
+                  >
                     <div>
                       <p className="font-bold">{u.name}</p>
                       <p className="text-sm text-muted-foreground">{u.email}</p>
