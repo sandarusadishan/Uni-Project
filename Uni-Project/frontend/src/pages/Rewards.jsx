@@ -46,7 +46,8 @@ const Rewards = () => {
             toast({
                 title: "❌ Insufficient Points",
                 description: `You need ${item.points - points} more points to redeem this reward.`,
-                variant: "destructive"
+                variant: "destructive",
+                duration: 2000,
             });
             return;
         }

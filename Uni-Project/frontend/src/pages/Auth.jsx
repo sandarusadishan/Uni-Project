@@ -25,17 +25,27 @@ const Auth = () => {
     try {
       if (isLogin) {
         await login(email, password);
-        toast({ title: 'Welcome back!' });
+        toast({ title: "Welcome back!", duration: 2000 });
+        navigate("/menu");
       } else {
         await register(email, password, name);
-        toast({ title: 'Account created successfully!' });
+        toast({
+          title: "✅ Account Created!",
+          description: "Your account has been created successfully. Please log in.",
+          duration: 2000,
+        });
+        // Switch to the login tab and clear fields
+        setIsLogin(true);
+        setName('');
+        // Keep email and clear password for user convenience
+        setPassword('');
       }
-      navigate('/menu');
     } catch (error) {
       toast({
         title: 'Error',
         description: error.message,
         variant: 'destructive',
+        duration: 2000,
       });
     }
   };
@@ -48,6 +58,7 @@ const Auth = () => {
     toast({
       title: 'Feature Coming Soon!',
       description: `${provider} authentication will be implemented in a future update.`,
+      duration: 2000,
     });
   };
 
@@ -128,7 +139,7 @@ const Auth = () => {
                   <Input
                     id="name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -139,7 +150,7 @@ const Auth = () => {
                   <Input
                     id="register-email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder="your@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required

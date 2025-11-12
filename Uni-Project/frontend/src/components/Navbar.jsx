@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Award, Trophy, Package } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Award, Trophy, Package, UserStar } from 'lucide-react';
 import { Button } from './ui/button';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -113,6 +113,15 @@ const Navbar = () => {
                       Challenges
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                     {user?.role === 'admin' && (
+                  <Link to="/admin" className="flex items-center gap-2">
+                    <UserStar className="w-4 h-4" />
+                    Admin
+                  </Link>
+                )}
+                  </DropdownMenuItem>
+                 
                   <DropdownMenuItem onClick={logout} className="flex items-center gap-2">
                     <LogOut className="w-4 h-4" />
                     Logout

@@ -1,3 +1,5 @@
+// src/pages/Profile.jsx (සර්ව සම්පූර්ණ කෝඩ්)
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
@@ -20,72 +22,53 @@ const Profile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  // ✅ New state for order count
+  // ✅ Dynamic order count state
   const [userTotalOrders, setUserTotalOrders] = useState('—'); 
-
+  
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
   });
-
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmNewPassword: '',
   });
-
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      setFormData({ name: user.name, email: user.email });
-    }
+    if (user) setFormData({ name: user.name, email: user.email });
   }, [user]);
-  
-  // -----------------------------------------------------------
+
   // ✅ Order Count Fetch Logic
   useEffect(() => {
     const fetchOrderCount = async () => {
-        if (!user || !user._id || !user.token) return;
-        
-        try {
-            // /api/orders/user/:id API call එක භාවිත කරයි
-            const res = await fetch(`${API_URL}/orders/user/${user._id}`, {
-                headers: {
-                    'Authorization': `Bearer ${user.token}`,
-                },
-            });
-            const data = await res.json();
-            
-            if (res.ok && Array.isArray(data)) {
-                // Orders array එකේ දිග (length) Total Orders ගණන ලෙස සකසයි.
-                setUserTotalOrders(data.length);
-            } else {
-                console.error("Failed to fetch user orders:", data.message);
-                setUserTotalOrders(0);
-            }
-        } catch (error) {
-            console.error('Error fetching order count:', error);
-            setUserTotalOrders(0);
-        }
+      if (!user || !user._id || !user.token) return;
+      try {
+        // API call to get user's orders array
+        const res = await fetch(`${API_URL}/orders/user/${user._id}`, {
+          headers: { 'Authorization': `Bearer ${user.token}` },
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data)) setUserTotalOrders(data.length);
+        else setUserTotalOrders(0);
+      } catch (error) {
+        console.error('Error fetching order count:', error);
+        setUserTotalOrders(0);
+      }
     };
-
-    if (user && user.token) {
-        fetchOrderCount();
-    }
+    if (user && user.token) fetchOrderCount();
   }, [user]);
-  // -----------------------------------------------------------
 
+  // Preview URL for new image upload
   useEffect(() => {
     if (selectedFile) {
       const url = URL.createObjectURL(selectedFile);
       setPreviewUrl(url);
       return () => URL.revokeObjectURL(url);
-    } else {
-      setPreviewUrl(null);
-    }
+    } else setPreviewUrl(null);
   }, [selectedFile]);
 
   // --- Profile Update Logic ---
@@ -95,123 +78,85 @@ const Profile = () => {
 
     setLoading(true);
     const updateFormData = new FormData();
-
     updateFormData.append('name', formData.name);
     updateFormData.append('email', formData.email);
     if (user.role) updateFormData.append('role', user.role);
-
-    if (selectedFile) {
-      updateFormData.append('profilePic', selectedFile);
-    }
+    if (selectedFile) updateFormData.append('profilePic', selectedFile);
 
     try {
       const res = await fetch(`${API_URL}/users/${user._id}`, {
         method: 'PUT',
+        // Authorization token required for PUT requests
+        // headers: { 'Authorization': `Bearer ${user.token}` }, 
         body: updateFormData,
-        // headers: { 'Authorization': `Bearer ${user.token}` }, // Add token if required
       });
-
       const data = await res.json();
-
       if (res.ok) {
         toast({
           title: '✅ Profile Updated!',
           description: 'Your information has been successfully saved.',
+          duration: 2000,
         });
-
         if (setUser) {
           const updatedUser = data.user;
+          // Update Auth Context with new data including profileImage path
           setUser((prev) => ({
             ...prev,
             ...updatedUser,
             profileImage: updatedUser.profileImage || prev.profileImage,
           }));
         }
-
         setIsEditing(false);
         setSelectedFile(null);
-      } else {
-        throw new Error(data.message || 'Failed to update profile.');
-      }
+      } else throw new Error(data.message || 'Failed to update profile.');
     } catch (error) {
       console.error('Profile update error:', error);
       toast({
         title: '❌ Update Failed',
         description: error.message,
         variant: 'destructive',
+        duration: 2000,
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Password Change Logic ---
+  // --- Password Change Logic (Unchanged) ---
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (!user || loading) return;
-
-    if (passwordData.newPassword.length < 6) {
-      return toast({
-        title: 'Password too short',
-        description: 'New password must be at least 6 characters.',
-        variant: 'destructive',
-      });
-    }
-    if (passwordData.newPassword !== passwordData.confirmNewPassword) {
-      return toast({
-        title: 'Mismatch',
-        description: 'New passwords do not match.',
-        variant: 'destructive',
-      });
-    }
+    if (passwordData.newPassword.length < 6)
+      return toast({ title: 'Password too short', description: 'New password must be at least 6 characters.', variant: 'destructive', duration: 2000 });
+    if (passwordData.newPassword !== passwordData.confirmNewPassword)
+      return toast({ title: 'Mismatch', description: 'New passwords do not match.', variant: 'destructive', duration: 2000 });
 
     setLoading(true);
-
     try {
-      // Password change API call (requires current password verification)
       const res = await fetch(`${API_URL}/users/change-password/${user._id}`, {
         method: 'PUT',
-        headers: { 
-            'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${user.token}` // Add token if required
-        },
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword }),
       });
-
       const data = await res.json();
-
       if (res.ok) {
-        toast({
-          title: '✅ Success',
-          description: 'Password changed successfully. You may need to log in again soon.',
-        });
+        toast({ title: '✅ Success', description: 'Password changed successfully.', duration: 2000 });
         setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
         setIsChangingPassword(false);
-      } else {
-        throw new Error(data.message || 'Failed to change password.');
-      }
+      } else throw new Error(data.message || 'Failed to change password.');
     } catch (error) {
       console.error('Password change error:', error);
-      toast({
-        title: '❌ Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: '❌ Error', description: error.message, variant: 'destructive', duration: 2000 });
     } finally {
       setLoading(false);
     }
   };
 
-  // --- UI Handlers ---
   const handleCancelEdit = () => {
     setIsEditing(false);
     setFormData({ name: user.name, email: user.email });
     setSelectedFile(null);
   };
-
   const handleCancelPasswordChange = () => {
     setIsChangingPassword(false);
     setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
@@ -219,35 +164,35 @@ const Profile = () => {
 
   if (!user) return <div className="text-center py-20">Please log in to view your profile.</div>;
 
-  // 🖼️ Profile Image Display Logic (Cache Busting Added)
-  const timestamp = new Date().getTime(); 
-  
+  // --- UI Helpers ---
+  const timestamp = new Date().getTime();
   const displayImage =
     previewUrl
       ? previewUrl
-      : user.profileImage 
-      ? `${BASE_URL}${user.profileImage}?t=${timestamp}`
+      : user.profileImage
+      ? `${BASE_URL}${user.profileImage}?t=${timestamp}` // Added cache busting
       : 'placeholder';
 
   const ProfileImageUI = () => (
-    <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 overflow-hidden">
+    <div className="flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-primary/20 overflow-hidden">
       {displayImage === 'placeholder' ? (
-        <User className="w-10 h-10 text-primary" />
+        <User className="w-10 h-10 sm:w-12 sm:h-12 text-primary" />
       ) : (
         <img src={displayImage} alt="Profile" className="object-cover w-full h-full rounded-full" />
       )}
     </div>
   );
 
-  // 🎯 Stats Array: Dynamic Total Orders value
   const stats = [
     { label: 'Loyalty Points', value: user.loyaltyPoints || 0, icon: Award, color: 'text-primary' },
-    { label: 'Total Orders', value: userTotalOrders, icon: Package, color: 'text-blue-500' }, // ✅ Dynamic Value
+    { label: 'Total Orders', value: userTotalOrders, icon: Package, color: 'text-blue-500' }, // Dynamic count
     { 
-        label: 'Member Since', 
-        value: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A', 
-        icon: User, 
-        color: 'text-green-500' 
+      label: 'Member Since',
+      value: user.createdAt
+        ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : 'N/A',
+      icon: User,
+      color: 'text-green-500',
     },
   ];
 
@@ -255,27 +200,25 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
       <Navbar />
 
-      <div className="container px-4 py-8 mx-auto">
-        <h1 className="mb-8 text-4xl font-bold">My Profile</h1>
+      <div className="container px-4 sm:px-6 md:px-8 py-8 mx-auto">
+        <h1 className="mb-8 text-3xl sm:text-4xl font-bold text-center md:text-left">My Profile</h1>
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Profile Info Card */}
+        <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
+          {/* Profile Info & Settings */}
           <div className="space-y-6 lg:col-span-2">
-            <Card className="p-8 glass">
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-4">
+            <Card className="p-6 sm:p-8 glass">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
                   <ProfileImageUI />
                   <div>
                     {isEditing ? (
                       <div className="space-y-2">
-                        {/* Name Input */}
                         <Input
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           placeholder="Your Name"
                           className="text-xl font-bold"
                         />
-                        {/* Email Input */}
                         <Input
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -286,7 +229,7 @@ const Profile = () => {
                     ) : (
                       <>
                         <h2 className="mb-1 text-2xl font-bold">{user.name}</h2>
-                        <p className="flex items-center gap-2 text-muted-foreground">
+                        <p className="flex items-center justify-center sm:justify-start gap-2 text-muted-foreground">
                           <Mail className="w-4 h-4" />
                           {user.email}
                         </p>
@@ -294,12 +237,15 @@ const Profile = () => {
                     )}
                   </div>
                 </div>
-                <Badge variant="secondary" className="text-lg">
-                  {user.role}
-                </Badge>
+                <div className="flex justify-center sm:justify-end">
+                  <Badge variant="secondary" className="text-sm sm:text-lg">
+                    {user.role}
+                  </Badge>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              {/* Responsive Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {stats.map((stat) => (
                   <div key={stat.label} className="p-4 text-center rounded-lg bg-secondary">
                     <stat.icon className={`h-8 w-8 mx-auto mb-2 ${stat.color}`} />
@@ -311,17 +257,18 @@ const Profile = () => {
             </Card>
 
             {/* Account Settings */}
-            <Card className="p-8 glass">
-              <h3 className="mb-4 text-xl font-bold">Account Settings</h3>
+            <Card className="p-6 sm:p-8 glass">
+              <h3 className="mb-4 text-lg sm:text-xl font-bold">Account Settings</h3>
 
-              {/* Edit Profile */}
               {isEditing && (
-                <form onSubmit={handleUpdateProfile} className="space-y-4 mb-6 p-4 rounded-lg border border-primary/20">
+                <form
+                  onSubmit={handleUpdateProfile}
+                  className="space-y-4 mb-6 p-4 rounded-lg border border-primary/20"
+                >
                   <h4 className="font-semibold">Update Details & Photo</h4>
                   <div className="space-y-2">
                     <Label htmlFor="profile-pic">Change Profile Picture</Label>
-                    <div className="flex items-center gap-4">
-                      {/* File Input */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
                       <Input
                         id="profile-pic"
                         type="file"
@@ -354,7 +301,6 @@ const Profile = () => {
                 </form>
               )}
 
-              {/* Change Password */}
               {isChangingPassword && (
                 <form
                   onSubmit={handlePasswordChange}
@@ -441,23 +387,21 @@ const Profile = () => {
             </Card>
           </div>
 
-          {/* Recent Activity */}
+          {/* Right Sidebar (Recent Activity) */}
           <div className="lg:col-span-1">
-            <Card className="sticky p-6 glass top-24">
-              <h3 className="mb-4 text-xl font-bold">Recent Activity</h3>
+            <Card className="p-6 sm:p-8 glass sticky top-24">
+              <h3 className="mb-4 text-lg sm:text-xl font-bold">Recent Activity</h3>
               <div className="space-y-3 text-sm">
-                <div className="p-3 rounded-lg bg-secondary">
-                  <p className="mb-1 font-semibold">Order Completed</p>
-                  <p className="text-muted-foreground">2 hours ago</p>
-                </div>
-                <div className="p-3 rounded-lg bg-secondary">
-                  <p className="mb-1 font-semibold">Challenge Completed</p>
-                  <p className="text-muted-foreground">1 day ago</p>
-                </div>
-                <div className="p-3 rounded-lg bg-secondary">
-                  <p className="mb-1 font-semibold">Badge Unlocked</p>
-                  <p className="text-muted-foreground">3 days ago</p>
-                </div>
+                {[
+                  { title: 'Order Completed', time: '2 hours ago' },
+                  { title: 'Challenge Completed', time: '1 day ago' },
+                  { title: 'Badge Unlocked', time: '3 days ago' },
+                ].map((item, i) => (
+                  <div key={i} className="p-3 rounded-lg bg-secondary">
+                    <p className="mb-1 font-semibold">{item.title}</p>
+                    <p className="text-muted-foreground">{item.time}</p>
+                  </div>
+                ))}
               </div>
             </Card>
           </div>

@@ -87,10 +87,10 @@ const Cart = () => {
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`Order_Invoice_${order.id.slice(-6)}.pdf`);
         
-        toast({ title: '📥 Download Complete', description: 'Your invoice has been downloaded.' });
+        toast({ title: '📥 Download Complete', description: 'Your invoice has been downloaded.', duration: 2000 });
     } catch (error) {
         console.error("PDF Generation Error:", error);
-        toast({ title: '❌ Download Failed', description: 'Could not generate PDF invoice. Check if logo URL is accessible.', variant: 'destructive' });
+        toast({ title: '❌ Download Failed', description: 'Could not generate PDF invoice. Check if logo URL is accessible.', variant: 'destructive', duration: 2000 });
     } finally {
         setIsDownloading(false);
     }
@@ -100,11 +100,11 @@ const Cart = () => {
   // --- Coupon Apply Logic ---
   const handleApplyCoupon = async () => {
     if (!isAuthenticated || !user?.token) {
-        toast({ title: 'Login Required', description: 'Please log in to use a coupon.', variant: 'destructive' });
+        toast({ title: 'Login Required', description: 'Please log in to use a coupon.', variant: 'destructive', duration: 2000 });
         return;
     }
     if (!couponCode.trim()) {
-        toast({ title: 'Missing Code', description: 'Please enter a coupon code.', variant: 'destructive' });
+        toast({ title: 'Missing Code', description: 'Please enter a coupon code.', variant: 'destructive', duration: 2000 });
         return;
     }
     
@@ -138,12 +138,12 @@ const Cart = () => {
         } else {
             setDiscountAmount(0);
             setAppliedCoupon(null);
-            toast({ title: '❌ Invalid Code', description: data.message || 'Coupon could not be applied.', variant: 'destructive' });
+            toast({ title: '❌ Invalid Code', description: data.message || 'Coupon could not be applied.', variant: 'destructive', duration: 2000 });
         }
     } catch (error) {
         setDiscountAmount(0);
         setAppliedCoupon(null);
-        toast({ title: 'Network Error', description: 'Could not connect to server.', variant: 'destructive' });
+        toast({ title: 'Network Error', description: 'Could not connect to server.', variant: 'destructive', duration: 2000 });
     } finally {
         setIsApplying(false);
     }
@@ -153,7 +153,7 @@ const Cart = () => {
       setCouponCode('');
       setDiscountAmount(0);
       setAppliedCoupon(null);
-      toast({ title: 'Coupon Removed', description: 'Discount has been reverted.' });
+      toast({ title: 'Coupon Removed', description: 'Discount has been reverted.', duration: 2000 });
   }
 
   // --- Checkout Logic (Modified to include Coupon ID) ---
@@ -161,13 +161,13 @@ const Cart = () => {
     setIsCheckingOut(true);
     
     if (!isAuthenticated) { 
-        toast({ title: 'Login Required', description: 'Please log in to place an order.', variant: 'destructive' });
+        toast({ title: 'Login Required', description: 'Please log in to place an order.', variant: 'destructive', duration: 2000 });
         navigate('/auth');
         setIsCheckingOut(false);
         return;
     }
     if (!address.trim()) { 
-        toast({ title: 'Please enter delivery address', variant: 'destructive' });
+        toast({ title: 'Please enter delivery address', variant: 'destructive', duration: 2000 });
         setIsCheckingOut(false);
         return;
     }
@@ -222,12 +222,12 @@ const Cart = () => {
       setAppliedCoupon(null);
       setCouponCode(''); 
 
-      toast({ title: '🎉 Order placed successfully!', description: `Order ID: ${data.orderId.slice(-6)}` });
+      toast({ title: '🎉 Order placed successfully!', description: `Order ID: ${data.orderId.slice(-6)}`, duration: 2000 });
       
       navigate('/orders');
     } catch (error) {
       console.error('Checkout error:', error);
-      toast({ title: '❌ Checkout Failed', description: error.message, variant: 'destructive' });
+      toast({ title: '❌ Checkout Failed', description: error.message, variant: 'destructive', duration: 2000 });
     } finally {
       setIsCheckingOut(false);
     }

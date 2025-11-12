@@ -121,7 +121,7 @@ const Menu = () => {
       price: product.price,
       image: product.image,
     });
-    toast({ title: `${product.name} added to cart!` });
+    toast({ title: `${product.name} added to cart!`, duration: 2000 });
   };
 
   // 🎯 Loading/Error UI (unchanged)

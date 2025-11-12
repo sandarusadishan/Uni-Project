@@ -52,6 +52,7 @@ const Contact = () => {
       toast({
         title: "✅ Message Sent",
         description: "We will get back to you soon!",
+        duration: 2000,
       });
       form.reset();
     } catch (error) {
@@ -60,6 +61,7 @@ const Contact = () => {
         title: "❌ Failed",
         description: "Could not send the message.",
         variant: "destructive",
+        duration: 2000,
       });
     } finally {
       setLoading(false);

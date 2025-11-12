@@ -19,6 +19,16 @@ const userSchema = mongoose.Schema({
     type: String,
     default: "customer",
   },
+  // ✅ Profile Image Field එක එකතු කරන ලදී
+  profileImage: {
+    type: String,
+    default: null, // Default value is null until an image is uploaded
+  },
+  // Note: LoyaltyPoints field එක rewards system එකට අවශ්‍ය නම් මෙහිදී add කළ හැකිය
+  loyaltyPoints: {
+    type: Number,
+    default: 0,
+  }
 });
 
 // Encrypt password before saving

@@ -160,7 +160,8 @@ const AdminDashboard = () => {
       return toast({
         title: "Missing fields",
         description: "Please enter all product details and select an image.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 2000,
       });
     }
 
@@ -181,17 +182,17 @@ const AdminDashboard = () => {
         const data = await res.json();
 
         if (res.ok) {
-            toast({title: "✅ Success!", description: "Product added successfully."});
+            toast({title: "✅ Success!", description: "Product added successfully.", duration: 2000});
             setNewProduct({ name: "", price: "", description: "", category: "" });
             setSelectedFile(null);
             setImagePreviewUrl(null);
             fetchProducts();
         } else {
-            toast({title: "❌ Error", description: data.message || "Error adding product. Check server logs.", variant: "destructive"});
+            toast({title: "❌ Error", description: data.message || "Error adding product. Check server logs.", variant: "destructive", duration: 2000});
         }
     } catch (error) {
         console.error("Error:", error);
-        toast({title: "Server Error", description: "Could not connect to server.", variant: "destructive"});
+        toast({title: "Server Error", description: "Could not connect to server.", variant: "destructive", duration: 2000});
     }
     setIsSaving(false);
   };
@@ -211,7 +212,7 @@ const AdminDashboard = () => {
   
   const updateProduct = async () => { 
     if (!newProduct.name.trim() || !newProduct.price || !newProduct.category)
-        return toast({title: "Missing fields", description: "Please enter valid product details.", variant: "destructive"});
+        return toast({title: "Missing fields", description: "Please enter valid product details.", variant: "destructive", duration: 2000});
 
     setIsSaving(true);
     const formData = new FormData();
@@ -233,15 +234,15 @@ const AdminDashboard = () => {
         const data = await res.json();
 
         if (res.ok) {
-            toast({title: "✅ Success!", description: "Product updated successfully."});
+            toast({title: "✅ Success!", description: "Product updated successfully.", duration: 2000});
             cancelEdit();
             fetchProducts();
         } else {
-            toast({title: "❌ Error", description: data.message || "Error updating product", variant: "destructive"});
+            toast({title: "❌ Error", description: data.message || "Error updating product", variant: "destructive", duration: 2000});
         }
     } catch (error) {
         console.error("Update error:", error);
-        toast({title: "Server Error", description: "Could not connect to server.", variant: "destructive"});
+        toast({title: "Server Error", description: "Could not connect to server.", variant: "destructive", duration: 2000});
     }
     setIsSaving(false);
   };
@@ -251,7 +252,7 @@ const AdminDashboard = () => {
     // Note: Confirmation is handled by the Dialog component UI.
     const token = user?.token;
     if (!token || user?.role !== 'admin') {
-      toast({title: "Access Denied", description: "Not authorized to delete products.", variant: "destructive"});
+      toast({title: "Access Denied", description: "Not authorized to delete products.", variant: "destructive", duration: 2000});
       return;
     }
 
@@ -261,11 +262,11 @@ const AdminDashboard = () => {
         headers: { 'Authorization': `Bearer ${user?.token}` } 
       });
       if (res.ok) {
-        toast({title: "🗑️ Deleted!", description: "Product deleted successfully."});
+        toast({title: "🗑️ Deleted!", description: "Product deleted successfully.", duration: 2000});
         fetchProducts();
       } else {
         const data = await res.json();
-        toast({title: "❌ Error", description: data.message || "Failed to delete product", variant: "destructive"});
+        toast({title: "❌ Error", description: data.message || "Failed to delete product", variant: "destructive", duration: 2000});
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -284,7 +285,7 @@ const AdminDashboard = () => {
   const updateOrderStatus = async (orderId, newStatus) => {
       const token = user?.token;
       if (!token || user?.role !== 'admin') {
-          toast({title: "Access Denied", description: "Not authorized to change status.", variant: "destructive"});
+          toast({title: "Access Denied", description: "Not authorized to change status.", variant: "destructive", duration: 2000});
           return;
       }
 
@@ -301,15 +302,15 @@ const AdminDashboard = () => {
           });
 
           if (res.ok) {
-              toast({title: "✅ Updated", description: `Status changed to ${newStatus}`});
+              toast({title: "✅ Updated", description: `Status changed to ${newStatus}`, duration: 2000});
               fetchOrders(); 
           } else {
               const data = await res.json();
-              toast({title: "❌ Error", description: data.message || 'Failed to update status', variant: "destructive"});
+              toast({title: "❌ Error", description: data.message || 'Failed to update status', variant: "destructive", duration: 2000});
           }
       } catch (error) {
           console.error('Status update error:', error);
-          toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive"});
+          toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive", duration: 2000});
       }
   };
   
@@ -317,7 +318,7 @@ const AdminDashboard = () => {
   const deleteOrder = async (orderId) => {
       const token = user?.token;
       if (!token || user?.role !== 'admin') {
-          toast({title: "Access Denied", description: "Not authorized to delete orders.", variant: "destructive"});
+          toast({title: "Access Denied", description: "Not authorized to delete orders.", variant: "destructive", duration: 2000});
           return;
       }
 
@@ -328,15 +329,15 @@ const AdminDashboard = () => {
           });
 
           if (res.ok) {
-              toast({title: "🗑️ Deleted!", description: "Order deleted successfully."});
+              toast({title: "🗑️ Deleted!", description: "Order deleted successfully.", duration: 2000});
               fetchOrders(); 
           } else {
               const data = await res.json();
-              toast({title: "❌ Error", description: data.message || 'Failed to delete order', variant: "destructive"});
+              toast({title: "❌ Error", description: data.message || 'Failed to delete order', variant: "destructive", duration: 2000});
           }
       } catch (error) {
           console.error('Delete order error:', error);
-          toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive"});
+          toast({title: "Server Error", description: 'Error connecting to API.', variant: "destructive", duration: 2000});
       }
   };
 

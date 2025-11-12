@@ -66,12 +66,12 @@ const DailyInstantReward = () => {
                       setResult(lastPrize);
                   }
               } else {
-                  toast({ title: 'Error', description: data.message || 'Failed to check reward status.', variant: 'destructive' });
+                  toast({ title: 'Error', description: data.message || 'Failed to check reward status.', variant: 'destructive', duration: 2000 });
               }
               
           } catch (error) {
               console.error("Failed to fetch daily play status:", error);
-              toast({ title: 'Network Error', description: 'Could not connect to rewards server.', variant: 'destructive' });
+              toast({ title: 'Network Error', description: 'Could not connect to rewards server.', variant: 'destructive', duration: 2000 });
           } finally {
               setLoading(false);
           }
@@ -111,17 +111,18 @@ const DailyInstantReward = () => {
                   toast({
                       title: '😔 Try Again Tomorrow!',
                       description: finalResult.description,
-                      variant: 'secondary'
+                      variant: 'secondary',
+                      duration: 2000,
                   });
               }
           } else {
               // Handle already played or authorization error
-              toast({ title: 'Error', description: data.message || 'Failed to process reward.', variant: 'destructive' });
+              toast({ title: 'Error', description: data.message || 'Failed to process reward.', variant: 'destructive', duration: 2000 });
               setCanPlay(false); 
           }
       } catch (error) {
           console.error("Error playing daily reward:", error);
-          toast({ title: 'Network Error', description: 'Could not connect to server.', variant: 'destructive' });
+          toast({ title: 'Network Error', description: 'Could not connect to server.', variant: 'destructive', duration: 2000 });
       } finally {
           setLoading(false);
       }
