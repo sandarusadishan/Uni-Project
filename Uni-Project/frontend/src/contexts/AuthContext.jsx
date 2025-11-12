@@ -11,14 +11,14 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      const savedUser = sessionStorage.getItem(USER_STORAGE_KEY);
+      const savedUser = localStorage.getItem(USER_STORAGE_KEY);
       const userObject = savedUser ? JSON.parse(savedUser) : null;
       if (userObject && userObject.token) {
         setUser(userObject);
       }
     } catch (error) {
-      console.error("Failed to parse user from sessionStorage", error);
-      sessionStorage.removeItem(USER_STORAGE_KEY);
+      console.error("Failed to parse user from localStorage", error);
+      localStorage.removeItem(USER_STORAGE_KEY);
     }
   }, []);
 
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
     // The backend already removes the password. We store the user object and token.
     const userToStore = authenticatedUser;
     setUser(userToStore);
-    sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userToStore));
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userToStore));
   }, []);
 
   const login = useCallback(async (email, password) => {
@@ -41,9 +41,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = useCallback(async (email, password, name) => {
     try {
-      // Do not automatically log in the user after registration.
-      // Just make the request and let the Auth page handle the UI change.
-      await axios.post(`${API_URL}/register`, { name, email, password });
+      const response = await axios.post(`${API_URL}/register`, { name, email, password });
+      handleSuccessfulAuth(response.data);
     } catch (error) {
       throw new Error(error.response?.data?.message || error.message || 'Failed to register');
     }
@@ -51,7 +50,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(() => {
     setUser(null);
-    sessionStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
   }, []);
     
   return (

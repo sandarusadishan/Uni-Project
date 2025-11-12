@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import io from 'socket.io-client'; // ✅ Socket.IO client
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import {
@@ -19,7 +20,8 @@ import {
   Save,
   X,
   Upload,
-  Loader2
+  Loader2,
+  Bell // ✅ Bell icon
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { Input } from "../components/ui/input";
@@ -33,6 +35,14 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../hooks/use-toast"; 
 import RewardDashboard from "../components/RewardDashboard"; 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "../components/ui/dropdown-menu";
+import { Badge } from "../components/ui/badge";
 import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog"; // Dialog Component
 
 
@@ -60,6 +70,10 @@ const AdminDashboard = () => {
   const { user } = useAuth(); 
   const { toast } = useToast();
 
+  // ✅ Notification State
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationDot, setShowNotificationDot] = useState(false);
+
   const [newProduct, setNewProduct] = useState({
     name: "",
     price: "",
@@ -75,6 +89,33 @@ const AdminDashboard = () => {
         fetchProducts();
         fetchUsers();
         fetchOrders(); 
+
+        // ✅ Socket.IO Connection
+        const socket = io(BASE_URL);
+
+        // Admin බව server එකට දැනුම් දීම
+        socket.emit('join_admin_room');
+
+        // 'new_order' event එකට සවන් දීම
+        socket.on('new_order', (notification) => {
+            console.log('New Order Notification Received:', notification);
+            
+            // UI එකේ notification එක පෙන්වීම
+            toast({
+                title: "🔔 New Order Received!",
+                description: `Order #${notification.orderId.slice(-6)} for LKR ${notification.totalAmount.toFixed(2)}`,
+                duration: 5000,
+            });
+
+            // Notification list එකට එකතු කිරීම
+            setNotifications(prev => [notification, ...prev]);
+            setShowNotificationDot(true);
+
+            // Order list එක refresh කිරීම
+            fetchOrders();
+        });
+
+        return () => socket.disconnect(); // Component unmount වන විට connection එක විසන්ධි කිරීම
     }
   }, [user]);
 
@@ -352,11 +393,17 @@ const AdminDashboard = () => {
     }
   };
 
+  const totalRevenue = useMemo(() => {
+    return orders
+        .filter(order => order.status === 'delivered')
+        .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+  }, [orders]);
+
   const stats = [
     { label: "Products", value: products.length, icon: Package, color: "text-blue-500" },
     { label: "Orders", value: orders.length, icon: DollarSign, color: "text-green-500" },
     { label: "Users", value: users.length, icon: Users, color: "text-orange-500" },
-    { label: "Revenue", value: "LKR 0.00", icon: TrendingUp, color: "text-purple-500" },
+    { label: "Revenue", value: `LKR ${totalRevenue.toFixed(2)}`, icon: TrendingUp, color: "text-purple-500" },
   ];
 
   // -----------------------------------------------------------------------------------
@@ -367,9 +414,35 @@ const AdminDashboard = () => {
         {/* Dashboard Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Admin Dashboard</h1>
-          <Button variant="outline">
-            <Settings className="w-4 h-4 mr-2" /> Settings
-          </Button>
+          <div className="flex items-center gap-4">
+            {/* ✅ Notification Bell */}
+            <DropdownMenu onOpenChange={() => setShowNotificationDot(false)}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="relative">
+                  <Bell className="w-5 h-5" />
+                  {showNotificationDot && <span className="absolute top-0 right-0 block w-2 h-2 bg-red-500 rounded-full" />}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <div className="p-2 font-bold">Notifications ({notifications.length})</div>
+                <DropdownMenuSeparator />
+                {notifications.length > 0 ? (
+                  notifications.slice(0, 5).map(n => (
+                    <DropdownMenuItem key={n.orderId} className="flex flex-col items-start gap-1">
+                      <p className="font-semibold">{n.message}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(n.timestamp).toLocaleTimeString()}
+                      </p>
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <p className="p-4 text-sm text-center text-muted-foreground">No new notifications.</p>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button variant="outline"><Settings className="w-4 h-4 mr-2" /> Settings</Button>
+          </div>
         </div>
 
         {/* Stats Section */}

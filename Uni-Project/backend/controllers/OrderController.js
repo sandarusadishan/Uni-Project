@@ -24,6 +24,15 @@ export const createOrder = async (req, res) => {
             await Coupon.findByIdAndUpdate(couponId, { isUsed: true });
         }
 
+        // ✅ Real-time Notification: 'admin_room' එකට event එකක් යවයි
+        const notificationPayload = {
+            orderId: newOrder._id,
+            totalAmount: newOrder.totalAmount,
+            timestamp: newOrder.createdAt,
+            message: `New order #${newOrder._id.toString().slice(-6)} received!`
+        };
+        req.io.to('admin_room').emit('new_order', notificationPayload);
+
         res.status(201).json({ message: 'Order placed successfully.', orderId: newOrder._id });
     } catch (error) {
         console.error('Order creation error:', error);

@@ -2,6 +2,8 @@
 
 import express from "express";
 import mongoose from "mongoose";
+import { createServer } from 'http'; // ✅ HTTP server සෑදීමට
+import { Server } from 'socket.io'; // ✅ Socket.IO Server
 import userRouter from "./routes/userRouter.js";
 import productRouter from "./routes/productRouter.js";
 import orderRouter from "./routes/orderRouter.js"; 
@@ -15,6 +17,13 @@ import path from "path";
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app); // ✅ Express app එකෙන් HTTP server එකක් සාදයි
+const io = new Server(httpServer, { // ✅ Socket.IO server එක සාදයි
+  cors: {
+    origin: "http://localhost:5173", // Frontend URL (Vite default)
+    methods: ["GET", "POST"]
+  }
+});
 const monogourl = process.env.MONGO_URI;
 const PORT = process.env.PORT || 3000;
 
@@ -40,6 +49,23 @@ mongoose.connect(monogourl).then(async () => {
 app.use(cors());
 app.use(express.json()); 
 
+// ✅ Socket.IO instance එක controllers වලට access කිරීමට middleware එකක්
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// ✅ Socket.IO connection logic
+io.on('connection', (socket) => {
+  console.log('A user connected via WebSocket:', socket.id);
+
+  // Admin dashboard එකෙන් එවන event එකට සවන් දීම
+  socket.on('join_admin_room', () => {
+      console.log(`Socket ${socket.id} joined the admin room.`);
+      socket.join('admin_room'); // Admin-only කාමරයකට join වීම
+  });
+});
+
 // 🖼️ Static Files Serving Setup 
 // public folder එක root path (/) එකෙන් සර්ව් කිරීම (logo.png සඳහා)
 app.use(express.static(path.join(process.cwd(), 'public')));
@@ -53,6 +79,7 @@ app.use("/api/products", productRouter);
 app.use("/api/orders", orderRouter); 
 app.use("/api/rewards", rewardRouter); // ✅ Rewards Route එක register කර ඇත
 
-app.listen(PORT, () => {
+// ✅ app.listen වෙනුවට httpServer.listen භාවිතා කිරීම
+httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
