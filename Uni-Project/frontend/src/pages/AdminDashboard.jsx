@@ -5,6 +5,7 @@ import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"; // ✅ Coll
 import jsPDF from 'jspdf'; // ✅ jsPDF
 import html2canvas from 'html2canvas'; // ✅ html2canvas
 import { Button } from "../components/ui/button";
+import { Link } from "react-router-dom"; // ✅ Link import
 import {
   Tabs,
   TabsContent,
@@ -27,6 +28,7 @@ import {
   Bell, // ✅ Bell icon
   ChevronDown, // ✅ Icon for collapsible
   Receipt, // ✅ Icon for bill
+  Search, // ✅ Icon for search
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { Input } from "../components/ui/input";
@@ -48,12 +50,13 @@ import {
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
 import { Badge } from "../components/ui/badge";
+import EditUserDialog from "../components/EditUserDialog"; // ✅ Edit Dialog
 import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog"; // Dialog Component
 
 // Define the base URLs
 const BASE_URL = "http://localhost:3000";
 const API_URL = `${BASE_URL}/api`;
-const LOGO_URL = `${BASE_URL}/logo.png`;
+const LOGO_URL = `/logo.png`; // Use a relative path
 
 const FIXED_CATEGORIES = [
   "classic",
@@ -81,6 +84,12 @@ const AdminDashboard = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false); // ✅ PDF generation state
+  const [errors, setErrors] = useState({}); // ✅ Validation errors state
+
+  // ✅ Search States
+  const [productSearch, setProductSearch] = useState('');
+  const [orderSearch, setOrderSearch] = useState('');
+  const [userSearch, setUserSearch] = useState('');
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -213,26 +222,36 @@ const AdminDashboard = () => {
     setSelectedFile(file);
   };
 
-  const addProduct = async () => {
-    if (
-      !newProduct.name.trim() ||
-      !newProduct.price ||
-      !newProduct.category ||
-      !selectedFile
-    ) {
-      return toast({
-        title: "Missing fields",
-        description: "Please enter all product details and select an image.",
-        variant: "destructive",
-        duration: 2000,
-      });
+  // ✅ Product Validation Logic
+  const validateProduct = (isUpdating = false) => {
+    const newErrors = {};
+    if (!newProduct.name.trim()) {
+      newErrors.name = "Product name is required.";
     }
+    if (!newProduct.price) {
+      newErrors.price = "Price is required.";
+    } else if (isNaN(newProduct.price) || Number(newProduct.price) <= 0) {
+      newErrors.price = "Please enter a valid positive price.";
+    }
+    if (!newProduct.category) {
+      newErrors.category = "Category is required.";
+    }
+    if (!isUpdating && !selectedFile) {
+      newErrors.image = "Product image is required for new products.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const addProduct = async () => {
+    if (!validateProduct()) return;
 
     setIsSaving(true);
     const formData = new FormData();
     formData.append("name", newProduct.name);
     formData.append("price", newProduct.price);
-    formData.append("description", newProduct.description);
+    formData.append("description", newProduct.description || "");
     formData.append("category", newProduct.category);
     formData.append("imageFile", selectedFile);
 
@@ -253,6 +272,7 @@ const AdminDashboard = () => {
         setNewProduct({ name: "", price: "", description: "", category: "" });
         setSelectedFile(null);
         setImagePreviewUrl(null);
+        setErrors({}); // Clear errors on success
         fetchProducts();
       } else {
         toast({
@@ -289,14 +309,7 @@ const AdminDashboard = () => {
   };
 
   const updateProduct = async () => {
-    if (!newProduct.name.trim() || !newProduct.price || !newProduct.category)
-      return toast({
-        title: "Missing fields",
-        description: "Please enter valid product details.",
-        variant: "destructive",
-        duration: 2000,
-      });
-
+    if (!validateProduct(true)) return;
     setIsSaving(true);
     const formData = new FormData();
     formData.append("name", newProduct.name);
@@ -323,6 +336,7 @@ const AdminDashboard = () => {
           duration: 2000,
         });
         cancelEdit();
+        setErrors({}); // Clear errors on success
         fetchProducts();
       } else {
         toast({
@@ -395,7 +409,74 @@ const AdminDashboard = () => {
     });
     setSelectedFile(null);
     setImagePreviewUrl(null);
+    setErrors({}); // Clear errors on cancel
   };
+
+  // --- User Management (Admin) ---
+  const handleUpdateUser = async (userId, userData) => {
+    const token = user?.token;
+    if (!token || user?.role !== "admin") {
+      toast({ title: "Access Denied", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(userData)
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "✅ User Updated", description: "User details have been saved." });
+        fetchUsers();
+        // Close dialog by finding a way to set its state to false, or let it close itself.
+        // For now, the dialog will need to be manually closed. A better implementation would pass a close function.
+      } else {
+        throw new Error(data.message || "Failed to update user.");
+      }
+    } catch (error) {
+      toast({ title: "❌ Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    const token = user?.token;
+    if (!token || user?.role !== "admin") {
+      toast({ title: "Access Denied", variant: "destructive" });
+      return;
+    }
+
+    if (userId === user._id) {
+      toast({ title: "Action Not Allowed", description: "You cannot delete your own admin account.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        toast({ title: "🗑️ User Deleted", description: "The user has been permanently removed." });
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to delete user.");
+      }
+    } catch (error) {
+      toast({ title: "❌ Error", description: error.message, variant: "destructive" });
+    }
+  };
+
 
   // --- Order Status Management and Delete ---
 
@@ -612,6 +693,23 @@ const AdminDashboard = () => {
     },
   ];
 
+  // ✅ Memoized search results
+  const filteredProducts = useMemo(() => 
+    products.filter(p => 
+      p.name.toLowerCase().includes(productSearch.toLowerCase())
+    ), [products, productSearch]);
+
+  const filteredOrders = useMemo(() =>
+    orders.filter(o =>
+      o._id.toLowerCase().includes(orderSearch.toLowerCase())
+    ), [orders, orderSearch]);
+
+  const filteredUsers = useMemo(() =>
+    users.filter(u =>
+      u.name.toLowerCase().includes(userSearch.toLowerCase())
+    ), [users, userSearch]);
+
+
   // -----------------------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
@@ -621,13 +719,15 @@ const AdminDashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Admin Dashboard</h1>
           <div className="flex items-center gap-4">
-            {/* ✅ Notification Bell */}
-            <DropdownMenu onOpenChange={() => setShowNotificationDot(false)}>
+            {/* ✅ Notification Bell with Count */}
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="relative">
                   <Bell className="w-5 h-5" />
-                  {showNotificationDot && (
-                    <span className="absolute top-0 right-0 block w-2 h-2 bg-red-500 rounded-full" />
+                  {notifications.length > 0 && (
+                    <Badge className="absolute flex items-center justify-center w-5 h-5 p-0 -top-2 -right-2 bg-red-500 text-primary-foreground">
+                      {notifications.length}
+                    </Badge>
                   )}
                 </Button>
               </DropdownMenuTrigger>
@@ -636,7 +736,7 @@ const AdminDashboard = () => {
                   Notifications ({notifications.length})
                 </div>
                 <DropdownMenuSeparator />
-                {notifications.length > 0 ? (
+                {notifications.length > 0 ? ( // Show only the latest 5 notifications
                   notifications.slice(0, 5).map((n) => (
                     <DropdownMenuItem
                       key={n.orderId}
@@ -656,16 +756,21 @@ const AdminDashboard = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline">
-              <Settings className="w-4 h-4 mr-2" /> Settings
-            </Button>
+            <Link to="/profile">
+              <Button variant="outline">
+                <Settings className="w-4 h-4 mr-2" /> Settings
+              </Button>
+            </Link>
           </div>
         </div>
 
         {/* Stats Section */}
         <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
-            <Card key={stat.label} className="p-6 glass">
+            <Card 
+              key={stat.label} 
+              className="p-6 glass border border-primary/30 shadow-lg shadow-primary/20 transition-all duration-300 hover:border-primary/70 hover:-translate-y-1"
+            >
               <div className="flex items-center justify-between mb-4">
                 <stat.icon className={`h-8 w-8 ${stat.color}`} />
               </div>
@@ -687,133 +792,168 @@ const AdminDashboard = () => {
 
             {/* PRODUCTS TAB */}
             <TabsContent value="products" className="mt-6">
-              <h3 className="mb-4 text-xl font-bold">
-                {editingProduct ? "Edit Product" : "Add Product"}
-              </h3>
-              {/* Product Form UI */}
-              {/* ... (Form inputs) ... */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <Input
-                  placeholder="Product Name"
-                  value={newProduct.name}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, name: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Price (LKR)"
-                  type="number"
-                  value={newProduct.price}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, price: e.target.value })
-                  }
-                />
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="flex-1"
-                  />
-                  <Button size="icon" variant="outline" title="Upload Image">
-                    <Upload className="w-4 h-4" />
-                  </Button>
+              {/* ✅ Highlighted Product Form */}
+              <Card className="p-6 mb-8 border border-border/50 bg-muted/20">
+                <h3 className="mb-4 text-xl font-bold">
+                  {editingProduct ? "Edit Product" : "Add New Product"}
+                </h3>
+                <div className="grid gap-4 md:grid-cols-3">
+                  {/* Product Name Input */}
+                  <div className="space-y-1">
+                    <Input
+                      placeholder="Product Name"
+                      value={newProduct.name}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, name: e.target.value })
+                      }
+                      className={errors.name ? "border-red-500" : ""}
+                    />
+                    {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                  </div>
+                  {/* Price Input */}
+                  <div className="space-y-1">
+                    <Input
+                      placeholder="Price (LKR)"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9.]*"
+                      value={newProduct.price}
+                      onChange={(e) =>
+                        setNewProduct({ ...newProduct, price: e.target.value })
+                      }
+                      className={errors.price ? "border-red-500" : ""}
+                    />
+                    {errors.price && <p className="text-xs text-red-500">{errors.price}</p>}
+                  </div>
+                  {/* Image Input */}
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className={`flex-1 ${errors.image ? "border-red-500" : ""}`}
+                      />
+                      <Button size="icon" variant="outline" title="Upload Image">
+                        <Upload className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {errors.image && <p className="text-xs text-red-500">{errors.image}</p>}
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2 mt-4">
-                <Input
-                  placeholder="Description"
-                  value={newProduct.description}
-                  onChange={(e) =>
-                    setNewProduct({
-                      ...newProduct,
-                      description: e.target.value,
-                    })
-                  }
-                />
-                <Select
-                  value={newProduct.category}
-                  onValueChange={(value) =>
-                    setNewProduct({ ...newProduct, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FIXED_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Image Preview and Buttons */}
-              <div className="mt-4 flex flex-col md:flex-row gap-4 items-start">
-                {editingProduct && newProduct.image && !selectedFile && (
-                  <div className="p-2 border rounded-md">
-                    <p className="text-sm font-semibold mb-1">Current Image:</p>
-                    <img
-                      src={`${BASE_URL}${newProduct.image}`}
-                      alt="Current Product"
-                      className="w-24 h-24 object-cover rounded-md"
+                <div className="grid gap-4 md:grid-cols-2 mt-4">
+                  {/* Description Input */}
+                  <div className="space-y-1">
+                    <Input
+                      placeholder="Description (Optional)"
+                      value={newProduct.description}
+                      onChange={(e) =>
+                        setNewProduct({
+                          ...newProduct,
+                          description: e.target.value,
+                        })
+                      }
                     />
                   </div>
-                )}
-                {imagePreviewUrl && (
-                  <div className="p-2 border rounded-md">
-                    <p className="text-sm font-semibold mb-1">
-                      New Image Preview:
-                    </p>
-                    <img
-                      src={imagePreviewUrl}
-                      alt="New Image Preview"
-                      className="w-24 h-24 object-cover rounded-md"
-                    />
+                  {/* Category Select */}
+                  <div className="space-y-1">
+                    <Select
+                      value={newProduct.category}
+                      onValueChange={(value) =>
+                        setNewProduct({ ...newProduct, category: value })
+                      }
+                    >
+                      <SelectTrigger className={errors.category ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FIXED_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.category && <p className="text-xs text-red-500">{errors.category}</p>}
                   </div>
-                )}
-              </div>
+                </div>
 
-              <div className="flex gap-2 mt-4">
-                {editingProduct ? (
-                  <>
-                    <Button onClick={updateProduct} disabled={isSaving}>
+                <div className="mt-4 flex flex-col md:flex-row gap-4 items-start">
+                  {editingProduct && newProduct.image && !selectedFile && (
+                    <div className="p-2 border rounded-md">
+                      <p className="text-sm font-semibold mb-1">Current Image:</p>
+                      <img
+                        src={`${BASE_URL}${newProduct.image}`}
+                        alt="Current Product"
+                        className="w-24 h-24 object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                  {imagePreviewUrl && (
+                    <div className="p-2 border rounded-md">
+                      <p className="text-sm font-semibold mb-1">
+                        New Image Preview:
+                      </p>
+                      <img
+                        src={imagePreviewUrl}
+                        alt="New Image Preview"
+                        className="w-24 h-24 object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  {editingProduct ? (
+                    <>
+                      <Button onClick={updateProduct} disabled={isSaving}>
+                        {isSaving ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4 mr-2" />
+                        )}
+                        {isSaving ? "Saving..." : "Save Changes"}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={cancelEdit}
+                        disabled={isSaving}
+                      >
+                        <X className="w-4 h-4 mr-2" /> Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={addProduct} disabled={isSaving}>
                       {isSaving ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       ) : (
-                        <Save className="w-4 h-4 mr-2" />
+                        <Plus className="w-4 h-4 mr-2" />
                       )}
-                      {isSaving ? "Saving..." : "Save Changes"}
+                      {isSaving ? "Adding..." : "Add Product"}
                     </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={cancelEdit}
-                      disabled={isSaving}
-                    >
-                      <X className="w-4 h-4 mr-2" /> Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={addProduct} disabled={isSaving}>
-                    {isSaving ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Plus className="w-4 h-4 mr-2" />
-                    )}
-                    {isSaving ? "Adding..." : "Add Product"}
-                  </Button>
-                )}
-              </div>
+                  )}
+                </div>
+              </Card>
 
               {/* Product List */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input 
+                  placeholder="Search products by name..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
               <div className="grid gap-4 mt-6 md:grid-cols-2 lg:grid-cols-3">
-                {products.length === 0 && (
+                {filteredProducts.length === 0 && (
                   <p className="text-muted-foreground">No products yet.</p>
                 )}
-                {products.map((p) => (
+                {filteredProducts.map((p) => (
                   <Card
                     key={p._id}
                     className="p-4 flex justify-between items-center"
@@ -860,14 +1000,25 @@ const AdminDashboard = () => {
 
             {/* ORDERS TAB */}
             <TabsContent value="orders" className="mt-6">
-              <h3 className="mb-4 text-xl font-bold">
-                Recent Orders ({orders.length})
-              </h3>
-              {orders.length === 0 ? (
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">
+                  Recent Orders ({filteredOrders.length})
+                </h3>
+                <div className="relative w-full max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search by Order ID..."
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              {filteredOrders.length === 0 ? (
                 <p className="text-muted-foreground">No orders yet.</p>
               ) : (
                 <div className="space-y-4">
-                  {orders.map((o) => ( // 'o' for order
+                  {filteredOrders.map((o) => ( // 'o' for order
                     <Collapsible key={o._id} asChild>
                       <Card className="p-0 glass">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
@@ -925,7 +1076,7 @@ const AdminDashboard = () => {
 
                         {/* Collapsible Content for Order Items */}
                         <CollapsibleContent className="p-4 pt-0">
-                          <div className="p-4 mt-4 border-t border-border/50 bg-background/30 rounded-md">
+                          <div className="p-4 mt-4 border-t border-border/50 bg-secondary/50 rounded-md">
                             <h4 className="font-semibold mb-3">Order Items</h4>
                             <div className="space-y-2">
                               {o.items.map((item, idx) => (
@@ -968,29 +1119,53 @@ const AdminDashboard = () => {
 
             {/* USERS TAB (unchanged) */}
             <TabsContent value="users" className="mt-6">
-              <h3 className="mb-4 text-xl font-bold">User Management</h3>
-              {users.length === 0 ? (
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">User Management ({filteredUsers.length})</h3>
+                <div className="relative w-full max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search users by name..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              {filteredUsers.length === 0 ? (
                 <p className="text-muted-foreground">No users found.</p>
               ) : (
-                users.map((u) => (
+                filteredUsers.map((u) => (
                   <Card
                     key={u._id}
                     className="p-4 flex justify-between mb-2 items-center"
                   >
-                    <div>
-                      <p className="font-bold">{u.name}</p>
-                      <p className="text-sm text-muted-foreground">{u.email}</p>
-                      {u.role && (
-                        <span
-                          className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${
-                            u.role === "admin"
-                              ? "bg-red-500/20 text-red-400"
-                              : "bg-green-500/20 text-green-400"
-                          }`}
-                        >
-                          {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-4">
+                      <img 
+                        src={u.profileImage ? `${BASE_URL}${u.profileImage}` : `https://api.dicebear.com/8.x/initials/svg?seed=${u.name}`}
+                        alt={u.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <p className="font-bold">{u.name}</p>
+                        <p className="text-sm text-muted-foreground">{u.email}</p>
+                        {u.role && (
+                          <Badge variant={u.role === 'admin' ? 'destructive' : 'secondary'} className="mt-1">
+                            {u.role}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <EditUserDialog 
+                        user={u}
+                        onUpdate={handleUpdateUser}
+                        isSaving={isSaving}
+                      />
+                      <ConfirmDeleteDialog
+                        orderId={u._id}
+                        orderSlice={`${u.name} (${u.email})`}
+                        onConfirm={handleDeleteUser}
+                      />
                     </div>
                   </Card>
                 ))

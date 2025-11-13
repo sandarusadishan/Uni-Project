@@ -1,5 +1,3 @@
-// pages/Cart.jsx (සර්ව සම්පූර්ණ කෝඩ්)
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -16,6 +14,7 @@ import Navbar from '../components/Navbar';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
+import BankDepositInfoDialog from '../components/BankDepositInfoDialog'; // ✅ Import the new dialog
 
 // PDF Libraries 
 import jsPDF from 'jspdf';
@@ -24,8 +23,7 @@ import html2canvas from 'html2canvas';
 const DELIVERY_FEE = 350.0;
 const BASE_URL = 'http://localhost:3000';
 const API_URL = `${BASE_URL}/api`;
-const LOGO_URL = `${BASE_URL}/logo.png`; 
-
+const LOGO_URL = `/logo.png`; // Use a relative path
 const Cart = () => {
   const { items, updateQuantity, removeItem, clearCart, total } = useCart();
   const { user, isAuthenticated } = useAuth(); 
@@ -42,6 +40,10 @@ const Cart = () => {
   const [discountAmount, setDiscountAmount] = useState(0); 
   const [appliedCoupon, setAppliedCoupon] = useState(null); 
   const [isApplying, setIsApplying] = useState(false);
+
+  // ✅ Bank Deposit Dialog State
+  const [isBankInfoOpen, setIsBankInfoOpen] = useState(false);
+  const [completedOrderInfo, setCompletedOrderInfo] = useState(null);
 
   // --- PDF Logic ---
   const generateBill = async (order, customer) => { 
@@ -174,6 +176,14 @@ const Cart = () => {
         return;
     }
 
+    // ✅ Card Payment Placeholder
+    if (paymentMethod === 'card') {
+        toast({ title: 'Coming Soon!', description: 'Card payment functionality is not yet implemented.', variant: 'secondary', duration: 3000 });
+        setIsCheckingOut(false);
+        return;
+    }
+
+
     const finalTotal = total + DELIVERY_FEE - discountAmount;
 
     // Backend API එකට යැවීමට අවශ්‍ය Order Data සකස් කිරීම
@@ -219,15 +229,22 @@ const Cart = () => {
       
       await generateBill(createdOrder, user); 
 
-      clearCart();
-      // Reset coupon states after successful order
-      setDiscountAmount(0); 
-      setAppliedCoupon(null);
-      setCouponCode(''); 
+      // ✅ Conditional logic based on payment method
+      if (paymentMethod === 'deposit') {
+        setCompletedOrderInfo({ orderId: data.orderId, totalAmount: finalTotal });
+        setIsBankInfoOpen(true);
+        // Clear cart after dialog is closed by the user
+      } else { // For 'cash' on delivery
+        clearCart();
+        setDiscountAmount(0); 
+        setAppliedCoupon(null);
+        setCouponCode(''); 
+        toast({ title: '🎉 Order placed successfully!', description: `Order ID: ${data.orderId.slice(-6)}`, duration: 2000 });
+      }
 
-      toast({ title: '🎉 Order placed successfully!', description: `Order ID: ${data.orderId.slice(-6)}`, duration: 2000 });
+      // Clear cart and reset states after bank dialog is closed
+      if (paymentMethod !== 'deposit') navigate('/orders');
       
-      navigate('/orders');
     } catch (error) {
       console.error('Checkout error:', error);
       toast({ title: '❌ Checkout Failed', description: error.message, variant: 'destructive', duration: 2000 });
@@ -235,6 +252,16 @@ const Cart = () => {
       setIsCheckingOut(false);
     }
   };
+
+  // ✅ Function to handle closing the bank info dialog
+  const handleBankDialogClose = () => {
+    setIsBankInfoOpen(false);
+    clearCart();
+    setDiscountAmount(0);
+    setAppliedCoupon(null);
+    setCouponCode('');
+    navigate('/orders');
+  }
 
 
   // 🛒 Empty cart UI
@@ -379,18 +406,18 @@ const Cart = () => {
               <div className="space-y-3 pt-4 border-t border-border/50">
                 <Label>Payment Method</Label>
                 <RadioGroup defaultValue="cash" value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 gap-2">
-                  <Label className="flex items-center gap-3 p-3 rounded-md cursor-pointer bg-muted/50 hover:bg-muted transition-colors">
+                  <Label className="flex items-center gap-3 p-4 rounded-lg cursor-pointer border-2 border-transparent bg-muted/50 transition-all duration-200 hover:border-primary/50 data-[state=checked]:border-primary data-[state=checked]:bg-primary/10">
                     <RadioGroupItem value="cash" id="cash" />
                     <Banknote className="w-5 h-5 text-green-400" />
                     <span>Cash on Delivery</span>
                   </Label>
-                  <Label className="flex items-center gap-3 p-3 rounded-md cursor-pointer bg-muted/50 hover:bg-muted transition-colors has-[:disabled]:opacity-50 has-[:disabled]:cursor-not-allowed">
-                    <RadioGroupItem value="card" id="card" disabled />
+                  <Label className="flex items-center gap-3 p-4 rounded-lg cursor-pointer border-2 border-transparent bg-muted/50 transition-all duration-200 hover:border-primary/50 data-[state=checked]:border-primary data-[state=checked]:bg-primary/10">
+                    <RadioGroupItem value="card" id="card" />
                     <CreditCard className="w-5 h-5 text-blue-400" />
-                    <span>Card Payment <Badge variant="outline" className="text-xs">Coming Soon</Badge></span>
+                    <span>Card Payment <Badge variant="outline" className="text-xs">Beta</Badge></span>
                   </Label>
-                   <Label className="flex items-center gap-3 p-3 rounded-md cursor-pointer bg-muted/50 hover:bg-muted transition-colors has-[:disabled]:opacity-50 has-[:disabled]:cursor-not-allowed">
-                    <RadioGroupItem value="deposit" id="deposit" disabled />
+                   <Label className="flex items-center gap-3 p-4 rounded-lg cursor-pointer border-2 border-transparent bg-muted/50 transition-all duration-200 hover:border-primary/50 data-[state=checked]:border-primary data-[state=checked]:bg-primary/10">
+                    <RadioGroupItem value="deposit" id="deposit" />
                     <Landmark className="w-5 h-5 text-purple-400" />
                     <span>Bank Deposit <Badge variant="outline" className="text-xs">Coming Soon</Badge></span>
                   </Label>
@@ -416,6 +443,15 @@ const Cart = () => {
           </div>
         </div>
       </div>
+
+      {/* ✅ Bank Deposit Info Dialog */}
+      {completedOrderInfo && (
+        <BankDepositInfoDialog 
+          isOpen={isBankInfoOpen}
+          onOpenChange={handleBankDialogClose}
+          {...completedOrderInfo}
+        />
+      )}
 
       {/* 🛑 Hidden Invoice Content for PDF Generation (Layout code remains the same) 🛑 */}
       <div 

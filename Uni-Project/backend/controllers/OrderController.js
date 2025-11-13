@@ -1,9 +1,5 @@
-// controllers/OrderController.js (සර්ව සම්පූර්ණ කෝඩ්)
-
 import Order from '../models/Order.js';
 import Coupon from '../models/Coupon.js'; 
-
-// 1. Create New Order (Client checkout)
 export const createOrder = async (req, res) => {
     const { items, total, address, userId, couponId, paymentMethod } = req.body; 
 
@@ -134,7 +130,6 @@ export const applyCoupon = async (req, res) => {
             discountAmount = cartTotal;
         }
 
-        // 6. සාර්ථක ප්‍රතිචාරය Frontend වෙත යැවීම
         res.json({
             success: true,
             discount: discountAmount, // Final discount amount
