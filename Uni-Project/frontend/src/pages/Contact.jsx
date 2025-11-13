@@ -15,10 +15,10 @@ const Contact = () => {
   const [loading, setLoading] = useState(false);
 
   // EmailJS Config
-  const emailJsServiceID = "service_7nuqdmr";
-  const templateIDToCustomer = "template_6ixpd5u";
-  const templateIDToCompany = "template_3vuda0q";
-  const emailJsPublicKey = "akE9KZtnMv1vyhYFS";
+  const emailJsServiceID = "service_ze926ld";
+  const templateIDToCustomer = "template_od8r6i9";
+  const templateIDToCompany = "template_fj1lc4l";
+  const emailJsPublicKey = "FhHt8CgcP4bW9u7PF";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
