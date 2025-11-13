@@ -75,7 +75,7 @@ io.on('connection', (socket) => {
 
 // 🖼️ Static Files Serving Setup 
 // public folder එක root path (/) එකෙන් සර්ව් කිරීම (logo.png සඳහා)
-app.use(express.static(path.join(__dirname, 'public')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // uploads folder (profiles, products) සර්ව් කිරීම
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
