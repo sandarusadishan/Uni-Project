@@ -27,23 +27,27 @@ const io = new Server(httpServer, { // ✅ Socket.IO server එක සාදය�
 const monogourl = process.env.MONGO_URI;
 const PORT = process.env.PORT || 3000;
 
-mongoose.connect(monogourl).then(async () => {
-  console.log("Database Connected");
+// ✅ Admin user නිර්මාණය කිරීමේ function එක
+const seedAdminUser = async () => {
   try {
     const adminUser = await User.findOne({ email: 'admin@burger.com' });
     if (!adminUser) {
       await User.create({
         name: 'Admin',
         email: 'admin@burger.com',
-        password: 'admin123', 
+        password: 'admin123', // 🚨 අවවාදයයි: මෙය hash කළ යුතුය!
         role: 'admin',
-        // Note: Password should be hashed before saving to DB
       });
       console.log('Admin user created');
-    } 
+    }
   } catch (error) {
     console.error('Error seeding admin user:', error);
   }
+};
+
+mongoose.connect(monogourl).then(() => {
+  console.log("Database Connected");
+  seedAdminUser(); // ✅ Database connection එකෙන් පසුව admin user නිර්මාණය කිරීම
 }).catch((err) => console.error("Database connection error:", err));
 
 app.use(cors());
