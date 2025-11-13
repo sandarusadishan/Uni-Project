@@ -11,8 +11,11 @@ import rewardRouter from "./routes/rewardRoutes.js"; // ✅ Rewards Router
 import User from "./models/User.js"; 
 import dotenv from "dotenv";
 import cors from "cors";
-import path from "path"; 
-// Note: ES Module environment එකකදී __dirname/process.cwd() භාවිතයට path.resolve() හෝ path.dirname(fileURLToPath(import.meta.url)) අවශ්‍ය වේ.
+import path from "path";
+import { fileURLToPath } from 'url'; // ✅ Path handling සඳහා
+
+const __filename = fileURLToPath(import.meta.url); // ✅ වත්මන් ගොනුවේ path එක ලබාගැනීම
+const __dirname = path.dirname(__filename); // ✅ වත්මන් directory එකේ path එක ලබාගැනීම
 
 dotenv.config();
 
@@ -72,10 +75,10 @@ io.on('connection', (socket) => {
 
 // 🖼️ Static Files Serving Setup 
 // public folder එක root path (/) එකෙන් සර්ව් කිරීම (logo.png සඳහා)
-app.use(express.static(path.join(process.cwd(), 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // uploads folder (profiles, products) සර්ව් කිරීම
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // API Routes
 app.use("/api/users", userRouter);
