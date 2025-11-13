@@ -5,9 +5,9 @@ import Coupon from '../models/Coupon.js';
 
 // 1. Create New Order (Client checkout)
 export const createOrder = async (req, res) => {
-    const { items, total, address, userId, couponId } = req.body; 
+    const { items, total, address, userId, couponId, paymentMethod } = req.body; 
 
-    if (!items || !total || !address || !userId) {
+    if (!items || !total || !address || !userId || !paymentMethod) {
         return res.status(400).json({ message: 'Missing required order fields.' });
     }
 
@@ -17,6 +17,7 @@ export const createOrder = async (req, res) => {
             items,
             totalAmount: total, // Final discounted total
             address,
+            paymentMethod, // ✅ Save payment method
         });
 
         // Coupon එක භාවිත කර ඇත්නම්, isUsed = true ලෙස සලකුණු කරන්න.

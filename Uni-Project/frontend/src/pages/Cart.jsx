@@ -6,10 +6,11 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@radix-ui/react-radio-group';
 // ✅ Badge component එක නිවැරදිව import කරන්න.
 import { Badge } from '../components/ui/badge'; 
 import {
-  Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Loader2, Receipt, Tag, X
+  Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Loader2, Receipt, Tag, X, CreditCard, Banknote, Landmark
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useCart } from '../contexts/CartContext';
@@ -35,6 +36,7 @@ const Cart = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   
+  const [paymentMethod, setPaymentMethod] = useState('cash'); // ✅ Payment Method State
   // ✅ Coupon States
   const [couponCode, setCouponCode] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0); 
@@ -185,6 +187,7 @@ const Cart = () => {
       total: finalTotal, // Final Discounted Total යවයි
       userId: user._id, 
       address,
+      paymentMethod: paymentMethod, // ✅ Payment method එකතු කිරීම
       couponId: appliedCoupon ? appliedCoupon.id : null, 
     };
 
@@ -370,6 +373,28 @@ const Cart = () => {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                 />
+              </div>
+              
+              {/* ✅ Payment Method Selection */}
+              <div className="space-y-3 pt-4 border-t border-border/50">
+                <Label>Payment Method</Label>
+                <RadioGroup defaultValue="cash" value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 gap-2">
+                  <Label className="flex items-center gap-3 p-3 rounded-md cursor-pointer bg-muted/50 hover:bg-muted transition-colors">
+                    <RadioGroupItem value="cash" id="cash" />
+                    <Banknote className="w-5 h-5 text-green-400" />
+                    <span>Cash on Delivery</span>
+                  </Label>
+                  <Label className="flex items-center gap-3 p-3 rounded-md cursor-pointer bg-muted/50 hover:bg-muted transition-colors has-[:disabled]:opacity-50 has-[:disabled]:cursor-not-allowed">
+                    <RadioGroupItem value="card" id="card" disabled />
+                    <CreditCard className="w-5 h-5 text-blue-400" />
+                    <span>Card Payment <Badge variant="outline" className="text-xs">Coming Soon</Badge></span>
+                  </Label>
+                   <Label className="flex items-center gap-3 p-3 rounded-md cursor-pointer bg-muted/50 hover:bg-muted transition-colors has-[:disabled]:opacity-50 has-[:disabled]:cursor-not-allowed">
+                    <RadioGroupItem value="deposit" id="deposit" disabled />
+                    <Landmark className="w-5 h-5 text-purple-400" />
+                    <span>Bank Deposit <Badge variant="outline" className="text-xs">Coming Soon</Badge></span>
+                  </Label>
+                </RadioGroup>
               </div>
 
               <Button

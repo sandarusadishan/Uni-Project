@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import io from "socket.io-client"; // ✅ Socket.IO client
 import { Card } from "../components/ui/card";
+import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"; // ✅ Collapsible import
+import jsPDF from 'jspdf'; // ✅ jsPDF
+import html2canvas from 'html2canvas'; // ✅ html2canvas
 import { Button } from "../components/ui/button";
 import {
   Tabs,
@@ -22,6 +25,8 @@ import {
   Upload,
   Loader2,
   Bell, // ✅ Bell icon
+  ChevronDown, // ✅ Icon for collapsible
+  Receipt, // ✅ Icon for bill
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { Input } from "../components/ui/input";
@@ -48,6 +53,7 @@ import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog"; // Dialog C
 // Define the base URLs
 const BASE_URL = "http://localhost:3000";
 const API_URL = `${BASE_URL}/api`;
+const LOGO_URL = `${BASE_URL}/logo.png`;
 
 const FIXED_CATEGORIES = [
   "classic",
@@ -62,6 +68,11 @@ const FIXED_CATEGORIES = [
   "submarines",
 ];
 
+// ✅ Collapsible components from Radix UI
+const Collapsible = CollapsiblePrimitive.Root;
+const CollapsibleTrigger = CollapsiblePrimitive.Trigger;
+const CollapsibleContent = CollapsiblePrimitive.Content;
+
 const AdminDashboard = () => {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -69,6 +80,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false); // ✅ PDF generation state
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -489,6 +501,69 @@ const AdminDashboard = () => {
     }
   };
 
+  // ✅ Bill Generation Logic (from Cart.jsx, adapted for Admin)
+  const generateBillForOrder = async (order) => {
+    if (!order || !order.userId) {
+      toast({ title: '❌ Error', description: 'Order data is incomplete.', variant: 'destructive' });
+      return;
+    }
+    setIsDownloading(true);
+    const invoiceElement = document.getElementById('invoice-content');
+
+    const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryFee = 350.00; // Assuming a fixed fee for now
+    const discount = subtotal + deliveryFee - order.totalAmount;
+
+    // Dynamic Data Populate
+    document.getElementById('invoice-order-id').textContent = `#${order._id.slice(-6)}`;
+    document.getElementById('invoice-customer-name').textContent = order.userId.name;
+    document.getElementById('invoice-customer-email').textContent = order.userId.email;
+    document.getElementById('invoice-address').textContent = order.address;
+    document.getElementById('invoice-date').textContent = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    
+    const itemBody = document.getElementById('invoice-item-body');
+    itemBody.innerHTML = '';
+    order.items.forEach((item, index) => {
+        const row = itemBody.insertRow(index);
+        row.style.height = '40px';
+        row.style.backgroundColor = index % 2 === 0 ? '#fafafa' : '#ffffff';
+
+        row.insertCell(0).textContent = item.name;
+        row.insertCell(1).textContent = item.quantity;
+        row.insertCell(2).textContent = `LKR ${item.price.toFixed(2)}`;
+        row.insertCell(3).textContent = `LKR ${(item.price * item.quantity).toFixed(2)}`;
+    });
+
+    // Summary totals set
+    document.getElementById('invoice-subtotal').textContent = `LKR ${subtotal.toFixed(2)}`;
+    document.getElementById('invoice-delivery').textContent = `LKR ${deliveryFee.toFixed(2)}`;
+    document.getElementById('invoice-discount').textContent = `- LKR ${discount.toFixed(2)}`; 
+    document.getElementById('invoice-total').textContent = `LKR ${order.totalAmount.toFixed(2)}`;
+    
+    document.getElementById('invoice-logo').src = LOGO_URL; 
+
+    try {
+        const canvas = await html2canvas(invoiceElement, {
+            scale: 1.5, logging: false, useCORS: true, windowWidth: 800, windowHeight: invoiceElement.scrollHeight
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4'); 
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Order_Invoice_${order._id.slice(-6)}.pdf`);
+        
+        toast({ title: '📥 Download Complete', description: 'Invoice has been downloaded.', duration: 2000 });
+    } catch (error) {
+        console.error("PDF Generation Error:", error);
+        toast({ title: '❌ Download Failed', description: 'Could not generate PDF invoice.', variant: 'destructive', duration: 2000 });
+    } finally {
+        setIsDownloading(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
@@ -792,60 +867,94 @@ const AdminDashboard = () => {
                 <p className="text-muted-foreground">No orders yet.</p>
               ) : (
                 <div className="space-y-4">
-                  {orders.map((o) => (
-                    <Card
-                      key={o._id}
-                      className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                    >
-                      <div className="flex-1">
-                        <p className="font-bold text-lg">
-                          Order #{o._id.slice(-6)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Total: LKR {o.totalAmount?.toFixed(2)} | Customer:
-                          <span className="font-semibold text-foreground block md:inline-block">
-                            {o.userId && typeof o.userId === "object"
-                              ? o.userId.name
-                              : "N/A"}
-                          </span>
-                        </p>
-                        <p
-                          className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block capitalize ${getStatusColor(
-                            o.status
-                          )}`}
-                        >
-                          {o.status.replace("-", " ")}
-                        </p>
-                      </div>
+                  {orders.map((o) => ( // 'o' for order
+                    <Collapsible key={o._id} asChild>
+                      <Card className="p-0 glass">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
+                          <div className="flex-1">
+                            <p className="font-bold text-lg">
+                              Order #{o._id.slice(-6)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Total: LKR {o.totalAmount?.toFixed(2)} | Customer:
+                              <span className="font-semibold text-foreground block md:inline-block">
+                                {o.userId && typeof o.userId === "object"
+                                  ? o.userId.name
+                                  : "N/A"}
+                              </span>
+                            </p>
+                            <p
+                              className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block capitalize ${getStatusColor(
+                                o.status
+                              )}`}
+                            >
+                              {o.status.replace("-", " ")}
+                            </p>
+                          </div>
 
-                      {/* Status Update Dropdown/Buttons */}
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={o.status}
-                          onValueChange={(newStatus) =>
-                            updateOrderStatus(o._id, newStatus)
-                          }
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Update Status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="preparing">Preparing</SelectItem>
-                            <SelectItem value="on-the-way">
-                              On The Way
-                            </SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {/* Order Delete Button (Modern Dialog භාවිතයෙන්) */}
-                        <ConfirmDeleteDialog
-                          orderId={o._id}
-                          orderSlice={o._id.slice(-6)}
-                          onConfirm={deleteOrder}
-                        />
-                      </div>
-                    </Card>
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2">
+                            <CollapsibleTrigger asChild>
+                              <Button variant="outline" size="sm" className="gap-2">
+                                View Items <ChevronDown className="w-4 h-4" />
+                              </Button>
+                            </CollapsibleTrigger>
+                            <Select
+                              value={o.status}
+                              onValueChange={(newStatus) =>
+                                updateOrderStatus(o._id, newStatus)
+                              }
+                            >
+                              <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="Update Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="preparing">Preparing</SelectItem>
+                                <SelectItem value="on-the-way">On The Way</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <ConfirmDeleteDialog
+                              orderId={o._id}
+                              orderSlice={o._id.slice(-6)}
+                              onConfirm={deleteOrder}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Collapsible Content for Order Items */}
+                        <CollapsibleContent className="p-4 pt-0">
+                          <div className="p-4 mt-4 border-t border-border/50 bg-background/30 rounded-md">
+                            <h4 className="font-semibold mb-3">Order Items</h4>
+                            <div className="space-y-2">
+                              {o.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">
+                                    {item.quantity} &times; {item.name}
+                                  </span>
+                                  <span className="font-medium">
+                                    LKR {(item.price * item.quantity).toFixed(2)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-border/20 flex justify-end">
+                               <Button 
+                                size="sm" 
+                                variant="secondary" 
+                                className="gap-2"
+                                onClick={() => generateBillForOrder(o)}
+                                disabled={isDownloading}
+                               >
+                                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+                                {isDownloading ? "Generating..." : "Generate Bill"}
+                               </Button>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
                   ))}
                 </div>
               )}
@@ -889,6 +998,69 @@ const AdminDashboard = () => {
             </TabsContent>
           </Tabs>
         </Card>
+      </div>
+
+      {/* 🛑 Hidden Invoice Content for PDF Generation (Copied from Cart.jsx) 🛑 */}
+      <div 
+        id="invoice-content"
+        style={{
+            position: 'absolute',
+            left: '-9999px',
+            top: '0',
+            width: '800px', 
+            backgroundColor: '#ffffff',
+            color: '#333333',
+            padding: '40px',
+            fontFamily: 'Arial, sans-serif',
+            boxShadow: '0 0 10px rgba(0,0,0,0.1)'
+        }}
+      >
+        {/* Invoice Header (Logo and Title) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '4px solid #f97316', paddingBottom: '15px', marginBottom: '30px' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+                <img id="invoice-logo" src={LOGO_URL} alt="BurgerShop Logo" style={{ height: '60px', marginRight: '15px', objectFit: 'contain' }} crossOrigin="anonymous" />
+                <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#f97316' }}>BURGER SHOP</span>
+            </div>
+            <h1 style={{ fontSize: '32px', color: '#666', fontWeight: '300' }}>SALES INVOICE</h1>
+        </div>
+        
+        {/* Customer & Order Details */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', borderBottom: '1px solid #eee', paddingBottom: '20px' }}>
+            <div style={{ lineHeight: '1.8', fontSize: '14px' }}>
+                <p style={{ fontWeight: 'bold', color: '#f97316', marginBottom: '5px' }}>BILL TO:</p>
+                <p style={{ fontWeight: 'bold' }}><span id="invoice-customer-name"></span></p>
+                <p><span id="invoice-customer-email"></span></p>
+                <p>Delivery Address: <span id="invoice-address"></span></p>
+            </div>
+            <div style={{ lineHeight: '1.8', fontSize: '14px', textAlign: 'right' }}>
+                <p style={{ fontSize: '16px' }}><strong>Invoice #:</strong> <span id="invoice-order-id"></span></p>
+                <p style={{ fontSize: '16px' }}><strong>Invoice Date:</strong> <span id="invoice-date"></span></p>
+                <p style={{ marginTop: '10px', fontSize: '20px', fontWeight: 'bold', color: '#10b981' }}>STATUS: PAID</p>
+            </div>
+        </div>
+
+        {/* Items Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px', fontSize: '14px' }}>
+            <thead>
+                <tr style={{ backgroundColor: '#f97316', color: '#ffffff' }}>
+                    <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: 'bold', border: 'none' }}>ITEM DESCRIPTION</th>
+                    <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: 'bold', border: 'none' }}>QTY</th>
+                    <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: 'bold', border: 'none' }}>UNIT PRICE</th>
+                    <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: 'bold', border: 'none' }}>AMOUNT</th>
+                </tr>
+            </thead>
+            <tbody id="invoice-item-body" style={{ color: '#333' }}></tbody>
+        </table>
+        
+        {/* Totals Section */}
+        <div style={{ float: 'right', width: '50%', fontSize: '16px', lineHeight: '2' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}><span>Subtotal:</span><span id="invoice-subtotal" style={{ fontWeight: 'bold' }}></span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}><span>Delivery Fee:</span><span id="invoice-delivery" style={{ fontWeight: 'bold' }}></span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', color: '#eab308' }}><span>Coupon Discount:</span><span id="invoice-discount" style={{ fontWeight: 'bold' }}></span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderTop: '2px solid #333', marginTop: '15px', fontSize: '22px', fontWeight: 'bolder' }}><span>GRAND TOTAL (LKR):</span><span id="invoice-total" style={{ color: '#f97316' }}></span></div>
+        </div>
+        
+        <div style={{ clear: 'both', paddingTop: '60px', textAlign: 'center', fontSize: '12px', color: '#666', borderTop: '1px solid #eee', marginTop: '40px' }}><p>Payment due upon receipt. Thank you for choosing BurgerShop!</p></div>
       </div>
     </div>
   );
