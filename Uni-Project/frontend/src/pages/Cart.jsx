@@ -5,16 +5,16 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@radix-ui/react-radio-group';
-// ✅ Badge component එක නිවැරදිව import කරන්න.
 import { Badge } from '../components/ui/badge'; 
 import {
-  Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Loader2, Receipt, Tag, X, CreditCard, Banknote, Landmark
+  Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Loader2, Receipt, Tag, X, CreditCard, Banknote, Landmark, ShieldCheck, Sparkles, MapPin, Wallet 
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
-import BankDepositInfoDialog from '../components/BankDepositInfoDialog'; // ✅ Import the new dialog
+import BankDepositInfoDialog from '../components/BankDepositInfoDialog'; 
+import { motion, AnimatePresence } from 'framer-motion';
 
 // PDF Libraries 
 import jsPDF from 'jspdf';
@@ -23,7 +23,8 @@ import html2canvas from 'html2canvas';
 const DELIVERY_FEE = 350.0;
 const BASE_URL = 'http://localhost:3000';
 const API_URL = `${BASE_URL}/api`;
-const LOGO_URL = `/logo.png`; // Use a relative path
+const LOGO_URL = `/logo.png`; 
+
 const Cart = () => {
   const { items, updateQuantity, removeItem, clearCart, total } = useCart();
   const { user, isAuthenticated } = useAuth(); 
@@ -34,14 +35,12 @@ const Cart = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   
-  const [paymentMethod, setPaymentMethod] = useState('cash'); // ✅ Payment Method State
-  // ✅ Coupon States
+  const [paymentMethod, setPaymentMethod] = useState('cash'); 
   const [couponCode, setCouponCode] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0); 
   const [appliedCoupon, setAppliedCoupon] = useState(null); 
   const [isApplying, setIsApplying] = useState(false);
 
-  // ✅ Bank Deposit Dialog State
   const [isBankInfoOpen, setIsBankInfoOpen] = useState(false);
   const [completedOrderInfo, setCompletedOrderInfo] = useState(null);
 
@@ -91,10 +90,10 @@ const Cart = () => {
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`Order_Invoice_${order.id.slice(-6)}.pdf`);
         
-        toast({ title: '📥 Download Complete', description: 'Your invoice has been downloaded.', duration: 2000 });
+        toast({ title: '📥 Download Complete', description: 'Your invoice has been downloaded.', duration: 2000, className: "bg-[#09090b] text-white" });
     } catch (error) {
         console.error("PDF Generation Error:", error);
-        toast({ title: '❌ Download Failed', description: 'Could not generate PDF invoice. Check if logo URL is accessible.', variant: 'destructive', duration: 2000 });
+        toast({ title: '❌ Download Failed', description: 'Could not generate PDF invoice.', variant: 'destructive', duration: 2000 });
     } finally {
         setIsDownloading(false);
     }
@@ -123,21 +122,21 @@ const Cart = () => {
             },
             body: JSON.stringify({ 
                 code: couponCode.trim().toUpperCase(),
-                cartTotal: total // Subtotal එක යවයි
+                cartTotal: total 
             }),
         });
 
         const data = await res.json();
 
         if (res.ok && data.success) {
-            // ✅ Discount Amount State එක යාවත්කාලීන කරයි
             setDiscountAmount(data.discount);
             setAppliedCoupon({ id: data.couponId, code: couponCode.trim().toUpperCase(), amount: data.discount, prizeName: data.prizeName });
             
             toast({ 
                 title: `🎉 Coupon Applied!`, 
                 description: `${data.prizeName} applied successfully! Discount: LKR ${data.discount.toFixed(2)}`,
-                duration: 5000
+                duration: 5000,
+                className: "bg-[#09090b] text-white"
             });
         } else {
             setDiscountAmount(0);
@@ -160,7 +159,7 @@ const Cart = () => {
       toast({ title: 'Coupon Removed', description: 'Discount has been reverted.', duration: 2000 });
   }
 
-  // --- Checkout Logic (Modified to include Coupon ID) ---
+  // --- Checkout Logic ---
   const handleCheckout = async () => {
     setIsCheckingOut(true);
     
@@ -176,7 +175,6 @@ const Cart = () => {
         return;
     }
 
-    // ✅ Card Payment Placeholder
     if (paymentMethod === 'card') {
         toast({ title: 'Coming Soon!', description: 'Card payment functionality is not yet implemented.', variant: 'secondary', duration: 3000 });
         setIsCheckingOut(false);
@@ -186,7 +184,6 @@ const Cart = () => {
 
     const finalTotal = total + DELIVERY_FEE - discountAmount;
 
-    // Backend API එකට යැවීමට අවශ්‍ය Order Data සකස් කිරීම
     const orderData = {
       items: items.map(item => ({
         name: item.name,
@@ -194,15 +191,14 @@ const Cart = () => {
         price: item.price,
         image: item.image,
       })),
-      total: finalTotal, // Final Discounted Total යවයි
+      total: finalTotal,
       userId: user._id, 
       address,
-      paymentMethod: paymentMethod, // ✅ Payment method එකතු කිරීම
+      paymentMethod: paymentMethod, 
       couponId: appliedCoupon ? appliedCoupon.id : null, 
     };
 
     try {
-      // Order API call කිරීම
       const res = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {
@@ -218,7 +214,6 @@ const Cart = () => {
         throw new Error(data.message || 'Failed to place order.');
       }
 
-      // Order successful වූ පසු Bill එක generate කිරීම
       const createdOrder = {
         id: data.orderId,
         items: orderData.items,
@@ -229,20 +224,17 @@ const Cart = () => {
       
       await generateBill(createdOrder, user); 
 
-      // ✅ Conditional logic based on payment method
       if (paymentMethod === 'deposit') {
         setCompletedOrderInfo({ orderId: data.orderId, totalAmount: finalTotal });
         setIsBankInfoOpen(true);
-        // Clear cart after dialog is closed by the user
-      } else { // For 'cash' on delivery
+      } else { 
         clearCart();
         setDiscountAmount(0); 
         setAppliedCoupon(null);
         setCouponCode(''); 
-        toast({ title: '🎉 Order placed successfully!', description: `Order ID: ${data.orderId.slice(-6)}`, duration: 2000 });
+        toast({ title: '🎉 Order placed successfully!', description: `Order ID: ${data.orderId.slice(-6)}`, duration: 2000, className: "bg-[#09090b] text-white" });
       }
 
-      // Clear cart and reset states after bank dialog is closed
       if (paymentMethod !== 'deposit') navigate('/orders');
       
     } catch (error) {
@@ -253,7 +245,6 @@ const Cart = () => {
     }
   };
 
-  // ✅ Function to handle closing the bank info dialog
   const handleBankDialogClose = () => {
     setIsBankInfoOpen(false);
     clearCart();
@@ -267,19 +258,25 @@ const Cart = () => {
   // 🛒 Empty cart UI
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
+      <div className="min-h-screen bg-[#050505] text-white selection:bg-[#FFB800] selection:text-black">
         <Navbar />
-        <div className="container flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4 py-10 mx-auto text-center animate-fadeInBlur">
-          <ShoppingBag className="w-20 h-20 mx-auto mb-6 text-muted-foreground md:w-24 md:h-24" />
-          <h2 className="mb-3 text-2xl font-bold md:text-3xl">Your cart is empty</h2>
-          <p className="max-w-sm mb-8 text-muted-foreground">Looks like you haven't added any burgers yet. Let's find something delicious.</p>
-          <Button
-            onClick={() => navigate('/menu')}
-            size="lg"
-            className="gap-2 transition-transform duration-200 gold-glow hover:scale-105"
-          >
-            <ArrowLeft className="w-5 h-5" /> Back to Menu
-          </Button>
+        <div className="container flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4 py-10 mx-auto text-center">
+            
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
+              <div className="p-8 bg-[#09090b] rounded-full border border-white/5 mb-6 relative group">
+                  <div className="absolute inset-0 bg-[#FFB800]/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ShoppingBag className="w-16 h-16 text-gray-600 group-hover:text-[#FFB800] transition-colors" />
+              </div>
+              <h2 className="mb-2 text-3xl font-bold text-white tracking-tight">Your cart is empty</h2>
+              <p className="max-w-sm mb-8 text-sm text-gray-500">Looks like you haven't added any burgers yet. Let's find something delicious.</p>
+              <Button
+                onClick={() => navigate('/menu')}
+                size="lg"
+                className="bg-[#FFB800] text-black hover:bg-[#FFD600] font-bold rounded-lg px-8"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Menu
+              </Button>
+          </motion.div>
         </div>
       </div>
     );
@@ -287,162 +284,190 @@ const Cart = () => {
 
   // 🧾 Cart UI
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-[#FFB800] selection:text-black relative overflow-x-hidden">
+      {/* 🌟 Ambient Background */}
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[#FFB800]/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+
       <Navbar />
-      <div className="container px-4 py-8 mx-auto animate-fadeInBlur">
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold md:text-5xl">Your Cart</h1>
-        </div>
+      
+      <main className="container px-4 pt-32 pb-20 mx-auto relative z-10">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+           <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-white drop-shadow-xl mb-1">
+             Shopping <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFB800] to-yellow-600">Cart</span>
+           </h1>
+           <p className="text-gray-400 text-sm">Review your selected items</p>
+        </motion.div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* 🧍 Cart Items (unchanged) */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 items-start">
+          
+          {/* 🧍 Cart Items (Clean & Compact) */}
           <div className="space-y-4 lg:col-span-2">
-            {items.map((item, index) => (
-              <Card key={item.id} className="p-4 transition-all duration-300 glass hover:border-primary/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: `${index * 100}ms` }}>
-                <div className="flex flex-col gap-4 sm:flex-row">
-                  <img src={`${BASE_URL}${item.image}`} alt={item.name} className="object-cover w-full h-32 rounded-md sm:w-24 sm:h-24" />
-                  <div className="flex-1 sm:text-left">
-                    <div className="flex justify-between">
-                      <h3 className="text-lg font-bold leading-tight">{item.name}</h3>
-                      <p className="hidden text-lg font-bold sm:block whitespace-nowrap">LKR {(item.price * item.quantity).toFixed(2)}</p>
+            <AnimatePresence>
+                {items.map((item, index) => (
+                <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                >
+                    <div className="bg-[#09090b]/80 border border-white/5 hover:border-[#FFB800]/30 rounded-2xl p-3 flex items-center gap-4 group transition-all duration-300">
+                        
+                        {/* Compact Image */}
+                        <div className="w-20 h-20 bg-[#121214] rounded-xl overflow-hidden shrink-0 border border-white/5 relative">
+                             <img src={`${BASE_URL}${item.image}`} alt={item.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                        
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-bold text-white uppercase truncate">{item.name}</h3>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Light Meal</p>
+                            <p className="text-[#FFB800] font-mono text-xs font-bold mt-1">LKR {item.price}</p>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center gap-3">
+                             <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/5">
+                                 <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-6 h-6 flex items-center justify-center rounded-md bg-white/5 hover:bg-white/10 text-gray-400 transition-colors">
+                                     <Minus className="w-3 h-3"/>
+                                 </button>
+                                 <span className="w-4 text-center text-xs font-mono font-bold text-white">{item.quantity}</span>
+                                 <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-6 h-6 flex items-center justify-center rounded-md bg-white/5 hover:bg-white/10 text-gray-400 transition-colors">
+                                     <Plus className="w-3 h-3"/>
+                                 </button>
+                             </div>
+                             
+                             <div className="text-right min-w-[80px]">
+                                 <p className="text-sm font-black text-white font-mono">LKR {(item.price * item.quantity).toFixed(0)}</p>
+                             </div>
+
+                             <button onClick={() => removeItem(item.id)} className="p-2 text-gray-600 hover:text-red-500 transition-colors">
+                                 <Trash2 className="w-4 h-4"/>
+                             </button>
+                        </div>
                     </div>
-
-                    <p className="text-sm font-semibold text-primary sm:text-left">LKR {item.price.toFixed(2)} each</p>
-
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex items-center gap-2">
-                        <Button size="icon" variant="outline" onClick={() => updateQuantity(item.id, item.quantity - 1)} className="transition-transform duration-200 hover:scale-110"><Minus className="w-4 h-4" /></Button>
-                        <span className="w-8 font-semibold text-center">{item.quantity}</span>
-                        <Button size="icon" variant="outline" onClick={() => updateQuantity(item.id, item.quantity + 1)} className="transition-transform duration-200 hover:scale-110"><Plus className="w-4 h-4" /></Button>
-                      </div>
-
-                      <Button size="icon" variant="destructive" onClick={() => removeItem(item.id)} className="transition-transform duration-200 hover:scale-110"><Trash2 className="w-4 h-4" /></Button>
-                    </div>
-
-                    <div className="mt-2 text-right sm:hidden">
-                      <p className="text-lg font-bold">LKR {(item.price * item.quantity).toFixed(2)}</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </motion.div>
+                ))}
+            </AnimatePresence>
           </div>
 
-          {/* 💳 Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky p-6 space-y-6 glass top-24">
-              <h2 className="text-2xl font-bold">Order Summary</h2>
+          {/* 💳 Order Summary - Clean Glass Panel */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1">
+            <Card className="sticky top-24 p-6 bg-[#09090b]/80 border border-white/5 rounded-3xl backdrop-blur-md">
+              <h2 className="text-base font-bold text-white flex items-center gap-2 mb-6 uppercase tracking-wider">
+                 <ShieldCheck className="w-4 h-4 text-[#FFB800]" /> Order Summary
+              </h2>
 
-              {/* Coupon Input Section */}
-              <div className="space-y-2 pt-2 border-t border-border/50">
-                <Label htmlFor="coupon">Have a Coupon Code?</Label>
-                <div className="flex gap-2">
-                    <Input
-                        id="coupon"
-                        placeholder="EASY100-XYZ"
+              {/* Coupon */}
+              <div className="mb-6 space-y-2">
+                 <div className="flex gap-2">
+                     <Input 
+                        placeholder="ENTER COUPON..." 
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
-                        disabled={!!appliedCoupon || isApplying}
-                    />
-                    {appliedCoupon ? (
-                        <Button onClick={handleRemoveCoupon} variant="outline" className="w-24 gap-1">
-                            <X className='w-4 h-4' /> Remove
-                        </Button>
-                    ) : (
-                        <Button 
-                            onClick={handleApplyCoupon} 
-                            variant="secondary" 
-                            disabled={!couponCode.trim() || isApplying}
-                            className="w-24"
-                        >
-                            {isApplying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
-                        </Button>
-                    )}
-                </div>
-                {appliedCoupon && (
-                    <Badge className="bg-green-600/20 text-green-400 gap-1">
-                        <Tag className='w-3 h-3' /> Code {appliedCoupon.code} Applied
-                    </Badge>
-                )}
+                        className="bg-black/40 border-white/10 text-xs h-9 focus:border-[#FFB800]/50 font-mono uppercase rounded-lg"
+                        disabled={!!appliedCoupon}
+                     />
+                     {appliedCoupon ? (
+                         <Button onClick={handleRemoveCoupon} size="icon" variant="destructive" className="h-9 w-9 rounded-lg"><X className="w-4 h-4"/></Button>
+                     ) : (
+                         <Button onClick={handleApplyCoupon} size="sm" className="h-9 bg-white/5 hover:bg-white/10 text-white border border-white/5 rounded-lg text-xs font-bold">APPLY</Button>
+                     )}
+                 </div>
+                 {appliedCoupon && <p className="text-[10px] text-green-400 text-center">Coupon Applied: -LKR {discountAmount}</p>}
               </div>
               
-              {/* Totals Breakdown */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-muted-foreground">
+              {/* Calculations */}
+              <div className="space-y-3 py-4 border-t border-white/5 text-xs">
+                <div className="flex justify-between text-gray-400">
                   <span>Subtotal</span>
-                  <span>LKR {total.toFixed(2)}</span>
+                  <span className="font-mono text-white">LKR {total.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Delivery Fee</span>
-                  <span>LKR {DELIVERY_FEE.toFixed(2)}</span>
+                <div className="flex justify-between text-gray-400">
+                  <span>Delivery</span>
+                  <span className="font-mono text-white">LKR {DELIVERY_FEE.toFixed(2)}</span>
                 </div>
-
                 {discountAmount > 0 && (
-                    <div className="flex justify-between text-red-400 font-semibold border-t border-border/50 pt-1">
-                        <span>Coupon Discount</span>
-                        <span>- LKR {discountAmount.toFixed(2)}</span>
+                    <div className="flex justify-between text-[#FFB800]">
+                        <span>Discount</span>
+                        <span className="font-mono">- LKR {discountAmount.toFixed(2)}</span>
                     </div>
                 )}
                 
-                <div className="flex justify-between pt-2 text-xl font-bold border-t">
-                  <span>Total</span>
-                  <span className="text-primary">
+                <div className="flex justify-between pt-4 mt-2 border-t border-white/5 items-end">
+                  <span className="text-sm font-bold text-white">Total</span>
+                  <span className="text-xl font-black text-[#FFB800] font-mono">
                     LKR {(total + DELIVERY_FEE - discountAmount).toFixed(2)}
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Delivery Address</Label>
+              {/* Address */}
+              <div className="mt-6 mb-8">
+                <Label className="text-[10px] uppercase font-bold text-gray-500 mb-2 flex items-center gap-1.5 ml-1">
+                    <MapPin className="w-3 h-3 text-[#FFB800]"/> Delivery Address
+                </Label>
                 <Input
-                  id="address"
-                  placeholder="123 Main St, Apt 4B"
+                  placeholder="Street address, Layout..."
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
+                  className="bg-black/40 border-white/10 focus:border-[#FFB800]/50 h-10 text-xs rounded-xl text-white px-4 transition-all hover:border-white/20"
                 />
               </div>
+
+              {/* Separator */}
+              <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-6" />
               
-              {/* ✅ Payment Method Selection */}
-              <div className="space-y-3 pt-4 border-t border-border/50">
-                <Label>Payment Method</Label>
-                <RadioGroup defaultValue="cash" value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 gap-2">
-                  <Label className="flex items-center gap-3 p-4 rounded-lg cursor-pointer border-2 border-transparent bg-muted/50 transition-all duration-200 hover:border-primary/50 data-[state=checked]:border-primary data-[state=checked]:bg-primary/10">
-                    <RadioGroupItem value="cash" id="cash" />
-                    <Banknote className="w-5 h-5 text-green-400" />
-                    <span>Cash on Delivery</span>
-                  </Label>
-                  <Label className="flex items-center gap-3 p-4 rounded-lg cursor-pointer border-2 border-transparent bg-muted/50 transition-all duration-200 hover:border-primary/50 data-[state=checked]:border-primary data-[state=checked]:bg-primary/10">
-                    <RadioGroupItem value="card" id="card" />
-                    <CreditCard className="w-5 h-5 text-blue-400" />
-                    <span>Card Payment <Badge variant="outline" className="text-xs">Beta</Badge></span>
-                  </Label>
-                   <Label className="flex items-center gap-3 p-4 rounded-lg cursor-pointer border-2 border-transparent bg-muted/50 transition-all duration-200 hover:border-primary/50 data-[state=checked]:border-primary data-[state=checked]:bg-primary/10">
-                    <RadioGroupItem value="deposit" id="deposit" />
-                    <Landmark className="w-5 h-5 text-purple-400" />
-                    <span>Bank Deposit <Badge variant="outline" className="text-xs">Coming Soon</Badge></span>
-                  </Label>
+              {/* Payment Method - Clean Tiles */}
+              <div className="space-y-4">
+                <Label className="text-[10px] uppercase font-bold text-gray-500 mb-2 flex items-center gap-1.5 ml-1">
+                    <Wallet className="w-3 h-3 text-[#FFB800]"/> Payment Method
+                </Label>
+                <RadioGroup defaultValue="cash" value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-3 gap-2">
+                   {['cash', 'card', 'deposit'].map((method) => (
+                       <Label key={method} className={`cursor-pointer rounded-xl border p-2 flex flex-col items-center justify-center gap-1 transition-all duration-200 ${paymentMethod === method ? 'bg-white/10 border-[#FFB800] text-white' : 'bg-black/20 border-white/5 text-gray-500 hover:bg-white/5'}`}>
+                           <RadioGroupItem value={method} id={method} className="hidden" />
+                           {method === 'cash' && <Banknote className="w-4 h-4" />}
+                           {method === 'card' && <CreditCard className="w-4 h-4" />}
+                           {method === 'deposit' && <Landmark className="w-4 h-4" />}
+                           <span className="text-[9px] uppercase font-bold tracking-wider">{method}</span>
+                       </Label>
+                   ))}
                 </RadioGroup>
+
+                 <AnimatePresence>
+                    {paymentMethod === 'card' && (
+                        <motion.div 
+                            initial={{ opacity: 0, height: 0 }} 
+                            animate={{ opacity: 1, height: 'auto' }} 
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="p-3 mt-2 bg-black/40 border border-white/5 rounded-xl space-y-2">
+                                <Input placeholder="Card Number" className="bg-black border-white/10 h-8 text-[10px] rounded-lg text-white font-mono" />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Input placeholder="MM/YY" className="bg-black border-white/10 h-8 text-[10px] rounded-lg text-white text-center font-mono" />
+                                    <Input placeholder="CVC" className="bg-black border-white/10 h-8 text-[10px] rounded-lg text-white text-center font-mono" />
+                                </div>
+                                <Input placeholder="Cardholder Name" className="bg-black border-white/10 h-8 text-[10px] rounded-lg text-white uppercase" />
+                            </div>
+                        </motion.div>
+                    )}
+                  </AnimatePresence>
               </div>
 
               <Button
                 onClick={handleCheckout}
-                className="w-full gap-2 transition-transform duration-200 gold-glow hover:scale-105"
-                size="lg"
+                className="w-full mt-6 bg-[#FFB800] text-black hover:bg-[#FFD600] font-bold rounded-xl h-10 text-xs shadow-lg shadow-[#FFB800]/20"
                 disabled={isCheckingOut || items.length === 0 || isDownloading}
               >
-                {isCheckingOut || isDownloading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" /> {isDownloading ? "Generating Bill..." : "Processing..."}
-                  </>
-                ) : (
-                  'Checkout & Get Bill'
-                )}
-                <Receipt className="w-5 h-5" />
+                {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : 'CHECKOUT NOW'}
               </Button>
             </Card>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </main>
 
       {/* ✅ Bank Deposit Info Dialog */}
       {completedOrderInfo && (
@@ -453,7 +478,7 @@ const Cart = () => {
         />
       )}
 
-      {/* 🛑 Hidden Invoice Content for PDF Generation (Layout code remains the same) 🛑 */}
+      {/* 🛑 Hidden Invoice Content for PDF Generation 🛑 */}
       <div 
         id="invoice-content"
         style={{

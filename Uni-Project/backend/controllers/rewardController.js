@@ -14,6 +14,22 @@ const PRIZES_CONFIG = [
 ];
 
 
+
+// const PRIZES_CONFIG = [
+//   { name: 'LKR 100 OFF', type: 'win', description: 'A small boost!', discount: { type: 'flat', value: 100 } },
+//   { name: 'FREE DRINK', type: 'win', description: 'Enjoy a free drink!', discount: { type: 'free_item', value: 1 } },
+//   { name: '5% OFF', type: 'win', description: 'Get 5% off!', discount: { type: 'percentage', value: 0.05 } },
+//   { name: 'TRY AGAIN', type: 'lose', description: 'Better luck tomorrow!', discount: null },
+//   { name: '10 POINTS', type: 'points', value: 10, description: 'You won 10 Loyalty Points!' },
+//   { name: 'LKR 100 OFF', type: 'coupon', description: 'A small boost!', discount: { type: 'flat', value: 100 } },
+//   { name: '5 POINTS', type: 'points', value: 5, description: 'You won 5 Loyalty Points!' },
+//   { name: 'FREE DRINK', type: 'coupon', description: 'Enjoy a free drink!', discount: { type: 'free_item', value: 1 } },
+//   { name: 'TRY AGAIN', type: 'lose', value: 0, description: 'Better luck tomorrow!' },
+// ];
+
+
+
+
 export const playDailyReward = async (req, res) => {
     const userId = req.user._id; 
 

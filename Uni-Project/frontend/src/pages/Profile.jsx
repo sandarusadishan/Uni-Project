@@ -1,16 +1,15 @@
-// src/pages/Profile.jsx (සර්ව සම්පූර්ණ කෝඩ්)
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { User, Mail, Award, Package, Edit, Save, X, Upload, Loader2, Key, Trash2, ShoppingBag } from 'lucide-react';
+import { User, Mail, Award, Package, Edit, Save, X, Upload, Loader2, Key, Trash2, ShoppingBag, Shield } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { useToast } from '../hooks/use-toast';
 import { Label } from '../components/ui/label';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const BASE_URL = "http://localhost:3000";
 const API_URL = `${BASE_URL}/api`;
@@ -22,7 +21,6 @@ const Profile = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  // ✅ Order history and count state
   const [userOrders, setUserOrders] = useState([]); 
   
   const [formData, setFormData] = useState({
@@ -42,7 +40,6 @@ const Profile = () => {
     if (user) setFormData({ name: user.name, email: user.email });
   }, [user]);
 
-  // ✅ Order History Fetch Logic
   useEffect(() => {
     const fetchOrderHistory = async () => {
       if (!user || !user._id || !user.token) return;
@@ -52,7 +49,6 @@ const Profile = () => {
         });
         const data = await res.json();
         if (res.ok && Array.isArray(data)) {
-          // Sort orders by date, newest first
           setUserOrders(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
         } else {
           setUserOrders([]);
@@ -65,7 +61,6 @@ const Profile = () => {
     if (user && user.token) fetchOrderHistory();
   }, [user]);
 
-  // Preview URL for new image upload
   useEffect(() => {
     if (selectedFile) {
       const url = URL.createObjectURL(selectedFile);
@@ -89,20 +84,14 @@ const Profile = () => {
     try {
       const res = await fetch(`${API_URL}/users/${user._id}`, {
         method: 'PUT',
-        // ✅ Authorization token එකතු කළා
         headers: { 'Authorization': `Bearer ${user.token}` }, 
         body: updateFormData,
       });
       const data = await res.json();
       if (res.ok) {
-        toast({
-          title: '✅ Profile Updated!',
-          description: 'Your information has been successfully saved.',
-          duration: 2000,
-        });
+        toast({ title: '✅ Profile Updated!', description: 'Saved successfully.', duration: 2000, className: "bg-[#09090b] text-white" });
         if (setUser) {
           const updatedUser = data.user;
-          // Update Auth Context with new data including profileImage path
           setUser((prev) => ({
             ...prev,
             ...updatedUser,
@@ -111,27 +100,16 @@ const Profile = () => {
         }
         setIsEditing(false);
         setSelectedFile(null);
-      } else throw new Error(data.message || 'Failed to update profile.');
+      } else throw new Error(data.message || 'Failed throughout update profile.');
     } catch (error) {
-      console.error('Profile update error:', error);
-      toast({
-        title: '❌ Update Failed',
-        description: error.message,
-        variant: 'destructive',
-        duration: 2000,
-      });
+      toast({ title: '❌ Update Failed', description: error.message, variant: 'destructive', duration: 2000 });
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ --- Profile Photo Removal Logic ---
   const handleRemovePhoto = async () => {
     if (!user || loading || !user.profileImage) return;
-    
-    // ✅ Use toast for confirmation (or a custom dialog component)
-    toast({ title: "Removing Photo...", description: "Please wait while we remove your profile picture." });
-    
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/users/${user._id}/profile-image`, {
@@ -140,12 +118,7 @@ const Profile = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        toast({
-          title: '🗑️ Photo Removed!',
-          description: 'Your profile picture has been removed.',
-          duration: 2000,
-        });
-        // Update context and local state
+        toast({ title: '🗑️ Photo Removed!', description: 'Your profile picture has been removed.', duration: 2000 });
         setUser((prev) => ({ ...prev, profileImage: data.user.profileImage }));
         setSelectedFile(null);
         setPreviewUrl(null);
@@ -153,22 +126,19 @@ const Profile = () => {
         throw new Error(data.message || 'Failed to remove photo.');
       }
     } catch (error) {
-      console.error('Photo removal error:', error);
-      toast({ title: '❌ Error', description: error.message, variant: 'destructive', duration: 2000 });
+       toast({ title: '❌ Error', description: error.message, variant: 'destructive', duration: 2000 });
     } finally {
       setLoading(false);
     }
   };
 
-
-  // --- Password Change Logic (Unchanged) ---
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (!user || loading) return;
     if (passwordData.newPassword.length < 6)
-      return toast({ title: 'Password too short', description: 'New password must be at least 6 characters.', variant: 'destructive', duration: 2000 });
+      return toast({ title: 'Password too short', description: 'Min 6 characters.', variant: 'destructive', duration: 2000 });
     if (passwordData.newPassword !== passwordData.confirmNewPassword)
-      return toast({ title: 'Mismatch', description: 'New passwords do not match.', variant: 'destructive', duration: 2000 });
+      return toast({ title: 'Mismatch', description: 'Passwords no match.', variant: 'destructive', duration: 2000 });
 
     setLoading(true);
     try {
@@ -176,18 +146,17 @@ const Profile = () => {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}` // ✅ Token එකතු කළා
+          'Authorization': `Bearer ${user.token}` 
         },
         body: JSON.stringify({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword }),
       });
       const data = await res.json();
       if (res.ok) {
-        toast({ title: '✅ Success', description: 'Password changed successfully.', duration: 2000 });
+        toast({ title: '✅ Success', description: 'Password changed.', duration: 2000 });
         setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
         setIsChangingPassword(false);
       } else throw new Error(data.message || 'Failed to change password.');
     } catch (error) {
-      console.error('Password change error:', error);
       toast({ title: '❌ Error', description: error.message, variant: 'destructive', duration: 2000 });
     } finally {
       setLoading(false);
@@ -199,274 +168,183 @@ const Profile = () => {
     setFormData({ name: user.name, email: user.email });
     setSelectedFile(null);
   };
+
   const handleCancelPasswordChange = () => {
     setIsChangingPassword(false);
     setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
   };
 
-  if (!user) return <div className="text-center py-20">Please log in to view your profile.</div>;
+  if (!user) return <div className="text-center py-20 text-white">Please log in to view your profile.</div>;
 
-  // --- UI Helpers ---
   const timestamp = new Date().getTime();
-  const displayImage =
-    previewUrl
-      ? previewUrl
-      : user.profileImage
-      ? `${BASE_URL}${user.profileImage}?t=${timestamp}` // Added cache busting
-      : 'placeholder';
-
-  const ProfileImageUI = () => (
-    <div className="flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-primary/20 overflow-hidden">
-      {displayImage === 'placeholder' ? (
-        <User className="w-10 h-10 sm:w-12 sm:h-12 text-primary" />
-      ) : (
-        <img src={displayImage} alt="Profile" className="object-cover w-full h-full rounded-full" />
-      )}
-    </div>
-  );
+  const displayImage = previewUrl ? previewUrl : user.profileImage ? `${BASE_URL}${user.profileImage}?t=${timestamp}` : 'placeholder';
 
   const stats = [
-    { label: 'Loyalty Points', value: user.loyaltyPoints || 0, icon: Award, color: 'text-yellow-400' },
-    { label: 'Total Orders', value: userOrders.length, icon: Package, color: 'text-blue-400' }, // ✅ Dynamic count
-    { 
-      label: 'Member Since',
-      // ✅ Month and Year format
-      value: user.memberSince
-        ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-        : 'N/A',
-      icon: User,
-      color: 'text-green-500',
-    },
+    { label: 'Loyalty Points', value: user.loyaltyPoints || 0, icon: Award, color: 'text-[#FFB800]', border: 'border-[#FFB800]/20' },
+    { label: 'Total Orders', value: userOrders.length, icon: Package, color: 'text-blue-400', border: 'border-blue-500/20' }, 
+    { label: 'Joined', value: user.memberSince ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A', icon: User, color: 'text-purple-400', border: 'border-purple-500/20' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-[#FFB800] selection:text-black relative overflow-x-hidden">
+      {/* 🌟 Ambient Background */}
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[#FFB800]/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+
       <Navbar />
 
-      <div className="container px-4 sm:px-6 md:px-8 py-8 mx-auto">
-        <h1 className="mb-8 text-3xl sm:text-4xl font-bold text-center md:text-left">My Profile</h1>
+      <main className="container px-4 pt-32 pb-20 mx-auto relative z-10">
+        
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white drop-shadow-xl text-center md:text-left">
+               My <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFB800] to-yellow-600">Profile</span>
+            </h1>
+        </motion.div>
 
-        <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
-          {/* Profile Info & Settings */}
-          <div className="space-y-6 lg:col-span-2">
-            <Card className="p-6 sm:p-8 glass">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-                  <ProfileImageUI />
-                  <div>
+        <div className="grid gap-8 lg:grid-cols-3">
+          
+          {/* Main Profile Card */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 space-y-6">
+            <Card className="p-8 bg-[#09090b]/60 border border-white/5 rounded-[32px] backdrop-blur-md relative overflow-hidden">
+               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[#FFB800] to-transparent opacity-50" />
+               <div className="absolute inset-0 bg-gradient-to-br from-[#FFB800]/5 to-transparent pointer-events-none" />
+               
+               <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
+                 
+                 {/* Profile Image with Glow */}
+                 <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-br from-[#FFB800] to-blue-500 rounded-full opacity-30 blur-md group-hover:opacity-50 transition-opacity" />
+                    <div className="w-32 h-32 rounded-full bg-[#050505] p-1 relative overflow-hidden border border-white/10">
+                       {displayImage === 'placeholder' ? (
+                          <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center">
+                             <User className="w-12 h-12 text-gray-500" />
+                          </div>
+                       ) : (
+                          <img src={displayImage} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                       )}
+                    </div>
+                    {isEditing && (
+                        <label className="absolute bottom-0 right-0 p-2 bg-[#FFB800] rounded-full text-black cursor-pointer hover:bg-[#FFD600] transition-colors shadow-lg">
+                           <Upload className="w-4 h-4" />
+                           <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files[0])} className="hidden" />
+                        </label>
+                    )}
+                 </div>
+
+                 <div className="flex-1 text-center md:text-left">
                     {isEditing ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          placeholder="Your Name"
-                          className="text-xl font-bold"
-                        />
-                        <Input
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          placeholder="Your Email"
-                          className="text-muted-foreground"
-                        />
-                      </div>
+                        <div className="space-y-4 max-w-sm">
+                           <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-10 text-sm bg-black/40 border-white/10 focus:border-[#FFB800] rounded-xl font-bold" placeholder="Your Name" />
+                           <Input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-10 text-sm bg-black/40 border-white/10 focus:border-[#FFB800] rounded-xl text-gray-400" placeholder="Your Email" />
+                        </div>
                     ) : (
-                      <>
-                        <h2 className="mb-1 text-2xl font-bold">{user.name}</h2>
-                        <p className="flex items-center justify-center sm:justify-start gap-2 text-muted-foreground">
-                          <Mail className="w-4 h-4" />
-                          {user.email}
-                        </p>
-                      </>
+                        <div>
+                           <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
+                              <h2 className="text-3xl font-bold text-white tracking-tight">{user.name}</h2>
+                              <Badge className={`border-0 text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 ${user.role === 'admin' ? 'bg-[#FFB800] text-black' : 'bg-blue-500/20 text-blue-400'}`}>{user.role}</Badge>
+                           </div>
+                           <p className="text-gray-400 flex items-center justify-center md:justify-start gap-2 mb-4 font-mono text-sm">
+                              <Mail className="w-4 h-4 text-[#FFB800]" /> {user.email}
+                           </p>
+                        </div>
                     )}
-                  </div>
-                </div>
-                <div className="flex justify-center sm:justify-end">
-                  <Badge variant="secondary" className="text-sm sm:text-lg">
-                    {user.role}
-                  </Badge>
-                </div>
-              </div>
+                 </div>
+               </div>
 
-              {/* Responsive Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="p-4 text-center rounded-lg bg-secondary">
-                    <stat.icon className={`h-8 w-8 mx-auto mb-2 ${stat.color}`} />
-                    <p className="mb-1 text-2xl font-bold">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Account Settings */}
-            <Card className="p-6 sm:p-8 glass">
-              <h3 className="mb-4 text-lg sm:text-xl font-bold">Account Settings</h3>
-
-              {isEditing && (
-                <form
-                  onSubmit={handleUpdateProfile}
-                  className="space-y-4 mb-6 p-4 rounded-lg border border-primary/20"
-                >
-                  <h4 className="font-semibold">Update Details & Photo</h4>
-                  <div className="space-y-2">
-                    <Label htmlFor="profile-pic">Change Profile Picture</Label>
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
-                      <Input
-                        id="profile-pic"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setSelectedFile(e.target.files[0])}
-                        className="flex-1"
-                      />
+               {/* Stats Grid */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                 {stats.map((stat, i) => (
+                    <div key={i} className={`p-4 rounded-2xl bg-[#050505]/50 border ${stat.border} flex flex-col items-center justify-center relative overflow-hidden group`}>
+                       <div className={`absolute inset-0 bg-gradient-to-br from-${stat.color.split('-')[1]}-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+                       <stat.icon className={`w-6 h-6 ${stat.color} mb-2`} />
+                       <p className="text-2xl font-black text-white tracking-tight">{stat.value}</p>
+                       <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{stat.label}</p>
                     </div>
-                    {/* ✅ Remove Photo Button */}
-                    {user.profileImage && !previewUrl && (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={handleRemovePhoto}
-                        className="w-full gap-2 mt-2"
-                        disabled={loading}
-                      ><Trash2 className="w-4 h-4" /> Remove Current Photo</Button>
-                    )}
-                  </div>
-
-                  <Button type="submit" className="w-full gap-2" disabled={loading}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" /> Save Changes
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleCancelEdit}
-                    className="w-full gap-2"
-                  >
-                    <X className="w-4 h-4" /> Cancel
-                  </Button>
-                </form>
-              )}
-
-              {isChangingPassword && (
-                <form
-                  onSubmit={handlePasswordChange}
-                  className="space-y-4 mb-6 p-4 rounded-lg border border-red-500/20"
-                >
-                  <h4 className="font-semibold flex items-center gap-2 text-red-400">
-                    <Key className="w-4 h-4" /> Change Password
-                  </h4>
-                  <Input
-                    type="password"
-                    placeholder="Current Password"
-                    value={passwordData.currentPassword}
-                    onChange={(e) =>
-                      setPasswordData({ ...passwordData, currentPassword: e.target.value })
-                    }
-                    required
-                  />
-                  <Input
-                    type="password"
-                    placeholder="New Password (min 6 chars)"
-                    value={passwordData.newPassword}
-                    onChange={(e) =>
-                      setPasswordData({ ...passwordData, newPassword: e.target.value })
-                    }
-                    required
-                  />
-                  <Input
-                    type="password"
-                    placeholder="Confirm New Password"
-                    value={passwordData.confirmNewPassword}
-                    onChange={(e) =>
-                      setPasswordData({ ...passwordData, confirmNewPassword: e.target.value })
-                    }
-                    required
-                  />
-
-                  <Button
-                    type="submit"
-                    className="w-full gap-2 bg-red-600 hover:bg-red-700"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Updating...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" /> Update Password
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleCancelPasswordChange}
-                    className="w-full gap-2"
-                  >
-                    <X className="w-4 h-4" /> Cancel
-                  </Button>
-                </form>
-              )}
-
-              {!isEditing && !isChangingPassword && (
-                <div className="space-y-4">
-                  <Button
-                    variant="outline"
-                    className="justify-start w-full gap-2"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit className="w-4 h-4" /> Edit Profile
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start w-full gap-2"
-                    onClick={() => setIsChangingPassword(true)}
-                  >
-                    <Key className="w-4 h-4" /> Change Password
-                  </Button>
-                  <Button variant="outline" className="justify-start w-full">
-                    Notification Preferences
-                  </Button>
-                </div>
-              )}
+                 ))}
+               </div>
             </Card>
-          </div>
 
-          {/* Right Sidebar (Recent Activity) */}
-          <div className="lg:col-span-1">
-            <Card className="p-6 sm:p-8 glass sticky top-24">
-              <h3 className="mb-4 text-lg sm:text-xl font-bold">Recent Activity</h3>
-              {/* ✅ Real Recent Activity */}
-              {userOrders.length > 0 ? (
-                <div className="space-y-3 text-sm">
-                  {userOrders.slice(0, 4).map((order) => (
-                    <div key={order._id} className="p-3 rounded-lg bg-secondary">
-                      <p className="font-semibold flex justify-between">
-                        <span>Order #{order._id.slice(-6)}</span>
-                        <span className="text-primary">LKR {order.totalAmount.toFixed(2)}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</p>
+            {/* Actions & Settings */}
+            <Card className="p-8 bg-[#09090b]/60 border border-white/5 rounded-[32px] backdrop-blur-md">
+                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                   <Shield className="w-5 h-5 text-[#FFB800]" /> Account Settings
+                </h3>
+
+                {isEditing ? (
+                   <div className="p-6 rounded-2xl bg-[#050505]/30 border border-white/5 space-y-4">
+                       <div className="flex gap-4">
+                          <Button onClick={handleUpdateProfile} disabled={loading} className="flex-1 bg-[#FFB800] text-black hover:bg-[#FFD600] font-bold rounded-xl h-10 text-sm">
+                             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} Save Changes
+                          </Button>
+                          <Button onClick={handleCancelEdit} variant="outline" className="flex-1 border-white/10 hover:bg-white/10 rounded-xl h-10 text-sm">Cancel</Button>
+                       </div>
+                       {user.profileImage && (
+                          <Button onClick={handleRemovePhoto} variant="destructive" className="w-full bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20 rounded-xl h-10 text-sm">
+                              Remove Profile Photo
+                          </Button>
+                       )}
+                   </div>
+                ) : isChangingPassword ? (
+                   <form onSubmit={handlePasswordChange} className="p-6 rounded-2xl bg-[#050505]/30 border border-white/5 space-y-4">
+                       <Input type="password" placeholder="Current Password" value={passwordData.currentPassword} onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })} className="h-10 text-sm bg-black/40 border-white/10 rounded-xl" required />
+                       <div className="grid grid-cols-2 gap-4">
+                          <Input type="password" placeholder="New Password" value={passwordData.newPassword} onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })} className="h-10 text-sm bg-black/40 border-white/10 rounded-xl" required />
+                          <Input type="password" placeholder="Confirm Password" value={passwordData.confirmNewPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmNewPassword: e.target.value })} className="h-10 text-sm bg-black/40 border-white/10 rounded-xl" required />
+                       </div>
+                       <div className="flex gap-4">
+                          <Button type="submit" disabled={loading} className="flex-1 bg-red-500 text-white hover:bg-red-600 font-bold rounded-xl h-10 text-sm">Update Password</Button>
+                          <Button type="button" onClick={handleCancelPasswordChange} variant="outline" className="flex-1 border-white/10 hover:bg-white/10 rounded-xl h-10 text-sm">Cancel</Button>
+                       </div>
+                   </form>
+                ) : (
+                    <div className="space-y-3">
+                        <Button variant="outline" onClick={() => setIsEditing(true)} className="w-full justify-start h-12 rounded-xl border-white/5 bg-[#050505]/30 hover:bg-white/5 hover:border-[#FFB800]/30 text-gray-300 hover:text-white transition-all group">
+                            <Edit className="w-4 h-4 mr-3 text-gray-500 group-hover:text-[#FFB800]" /> Edit Profile
+                        </Button>
+                        <Button variant="outline" onClick={() => setIsChangingPassword(true)} className="w-full justify-start h-12 rounded-xl border-white/5 bg-[#050505]/30 hover:bg-white/5 hover:border-red-500/30 text-gray-300 hover:text-white transition-all group">
+                            <Key className="w-4 h-4 mr-3 text-gray-500 group-hover:text-red-500" /> Change Password
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start h-12 rounded-xl border-white/5 bg-[#050505]/30 hover:bg-white/5 text-gray-500 hover:text-gray-300 transition-all opacity-50 cursor-not-allowed">
+                            Notification Preferences (Coming Soon)
+                        </Button>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-4">
-                  <ShoppingBag className="w-8 h-8 mx-auto mb-2" />
-                  <p>No recent orders found.</p>
-                </div>
-              )}
+                )}
             </Card>
-          </div>
+          </motion.div>
+
+          {/* Sidebar: Recent Activity */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1">
+             <Card className="p-8 bg-[#09090b]/60 border border-white/5 rounded-[32px] backdrop-blur-md sticky top-32">
+                 <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <ShoppingBag className="w-5 h-5 text-blue-400" /> Recent Activity
+                 </h3>
+                 
+                 {userOrders.length > 0 ? (
+                    <div className="relative border-l border-white/10 ml-3 space-y-6">
+                       {userOrders.slice(0, 5).map((order, i) => (
+                          <div key={order._id} className="relative pl-6">
+                             <div className="absolute -left-1.5 top-1.5 w-3 h-3 rounded-full bg-[#050505] border border-white/20" />
+                             <div className="p-4 rounded-2xl bg-[#050505]/30 border border-white/5 hover:border-[#FFB800]/20 transition-colors group cursor-pointer">
+                                <div className="flex justify-between items-start mb-1">
+                                   <span className="text-xs font-bold text-white group-hover:text-[#FFB800] transition-colors">Order #{order._id.slice(-6)}</span>
+                                   <span className="text-xs font-mono text-[#FFB800]">LKR {(order.totalAmount || 0).toFixed(0)}</span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">{new Date(order.createdAt).toLocaleDateString()}</p>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 ) : (
+                    <div className="text-center py-12 text-gray-500">
+                        <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p className="text-sm">No recent activity.</p>
+                    </div>
+                 )}
+             </Card>
+          </motion.div>
+
         </div>
-      </div>
+      </main>
     </div>
   );
 };

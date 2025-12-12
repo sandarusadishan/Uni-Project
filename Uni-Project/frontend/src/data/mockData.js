@@ -1,8 +1,8 @@
 export const mockBurgers = [
   {
     id: '1',
-    name: 'Classic Cheeseburger',
-    description: 'Juicy beef patty with cheddar cheese, lettuce, tomato, and our special sauce',
+    name: 'Cheese burger',
+    description: 'Juicy beef patty with cheddar cheese, and our special sauce',
     price: 750,
     category: 'classic',
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&h=500&fit=crop',

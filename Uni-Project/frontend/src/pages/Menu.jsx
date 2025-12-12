@@ -1,11 +1,11 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
-import { ShoppingCart, Search, Check, XCircle } from 'lucide-react'; // ✅ Icons එකතු කළා
+import { ShoppingCart, Search, Check, XCircle, Filter, ArrowUpDown, ChevronDown, Plus, Minus, Star, Flame, Droplets } from 'lucide-react'; 
 import Navbar from '../components/Navbar';
 import { useCart } from '../contexts/CartContext';
 import { useToast } from '../hooks/use-toast';
@@ -16,6 +16,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog"
+import {
+    RadioGroup,
+    RadioGroupItem
+} from "../components/ui/radio-group"
+import { Label } from "../components/ui/label"
+import { Checkbox } from "../components/ui/checkbox"
 
 // 🎯 Backend Constants
 const BASE_URL = "http://localhost:3000";
@@ -25,7 +38,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 }, // ✅ Animation එක smooth කළා
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }, 
   },
 };
 const itemVariants = {
@@ -35,65 +48,53 @@ const itemVariants = {
 
 
 // 🍔 BurgerCard Component
-const BurgerCard = ({ product, onAddToCart }) => {
-  const [isAdded, setIsAdded] = useState(false);
-
-  const handleAddToCartClick = () => {
-    onAddToCart(product);
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2000); // Reset after 2 seconds
-  };
-
+const BurgerCard = ({ product, onClick }) => {
   return (
     <motion.div
-    // ✅ 3D effect එක සඳහා perspective එකතු කළා
-    className="flex [perspective:800px]"
+    layout
+    className="flex h-full [perspective:1000px] group/card cursor-pointer"
     variants={itemVariants}
+    onClick={() => onClick(product)}
     >
-    {/* ✅ Electric border effect එක සහ 3D effect එක එකතු කළා */}
-    <Card className="relative flex flex-col w-full h-full overflow-hidden transition-all duration-500 border-transparent glass group hover:shadow-primary/20 [transform-style:preserve-3d] hover:[transform:rotateY(10deg)_rotateX(5deg)] electric-border">
-      <div className="relative overflow-hidden rounded-t-lg">
+    <Card className="relative flex flex-col w-full h-full overflow-hidden transition-all duration-500 bg-[#09090b] border border-white/5 hover:border-[#FFB800]/50 hover:[transform:rotateX(2deg)_rotateY(2deg)] shadow-lg hover:shadow-[0_0_40px_-10px_rgba(255,184,0,0.2)] rounded-3xl group-hover/card:z-10">
+      <div className="relative overflow-hidden h-52 flex-shrink-0">
         <img
           src={`${BASE_URL}${product.image}`}
           alt={product.name}
-          // ✅ Image එකට 3D hover effect එකක් ලබා දුන්නා
-          className="object-cover w-full h-56 transition-transform duration-500 ease-in-out group-hover:scale-125 group-hover:[transform:translateZ(20px)]"
+          className="object-cover w-full h-full transition-transform duration-700 ease-out group-hover/card:scale-110"
         />
-        <div className="absolute top-2 right-2">
-          <Badge variant="secondary" className="text-xs select-none">
+        <div className="absolute top-3 right-3 z-20">
+          <Badge className="bg-black/60 backdrop-blur-md text-[#FFB800] border border-[#FFB800]/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
             {product.category}
           </Badge>
         </div>
-        {/* ✅ 3D effect එක සඳහා අමතර layer එකක් */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-transparent to-transparent opacity-80" />
       </div>
-      {/* ✅ Card content එකට 3D hover effect එකක් ලබා දුන්නා */}
-      <div className="flex flex-col flex-grow p-4 space-y-3 transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:translateZ(30px)]">
-        <h3 className="text-xl font-bold truncate">{product.name}</h3>
-        <p className="flex-grow text-sm text-muted-foreground line-clamp-2">{product.description}</p>
-        {/* ✅ Layout එක fix කර, 3D effect එකක් එකතු කළා */}
-        <div className="flex items-end justify-between pt-2 mt-auto flex-nowrap [transform-style:preserve-3d]">
-          <span className="text-xl font-bold text-primary whitespace-nowrap transition-transform duration-500 group-hover:[transform:translateZ(40px)]">
-            LKR {Number(product.price).toFixed(2)}
+
+      <div className="flex flex-col flex-1 p-5 space-y-3 relative">
+        <div className="space-y-1 flex-1">
+            {/* Fixed height container for Title */}
+            <div className="h-7 mb-1 flex items-center">
+                <h3 className="text-lg font-bold text-white leading-tight group-hover/card:text-[#FFB800] transition-colors line-clamp-1">{product.name}</h3>
+            </div>
+            {/* Fixed height container for Description */}
+            <div className="h-9">
+                <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{product.description}</p>
+            </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-4 mt-auto border-t border-white/10">
+          <span className="text-lg font-bold text-white tracking-tight">
+            <span className="text-[#FFB800] text-xs align-top mr-1">LKR</span>
+            {Number(product.price).toFixed(2)}
           </span>
           <Button
-            onClick={handleAddToCartClick}
-            disabled={isAdded}
-            className={`gap-2 flex items-center justify-center transition-all duration-500 group-hover:scale-105 group-hover:[transform:translateZ(40px)] ${
-              isAdded
-                ? 'bg-green-600 hover:bg-green-700 w-28' // ✅ Added state style
-                : 'gold-glow w-24'
-            }`}
+            size="sm"
+            className="h-9 px-4 font-bold rounded-xl bg-[#FFB800] text-black hover:bg-[#E5A600] shadow-[0_0_20px_-5px_rgba(255,184,0,0.3)] hover:shadow-[0_0_25px_-5px_rgba(255,184,0,0.5)] hover:-translate-y-0.5 transition-all duration-300 text-xs"
           >
-            {isAdded ? (
-              <>
-                <Check className="w-4 h-4" /> Added!
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="w-4 h-4" /> Add
-              </>
-            )}
+             <Plus className="w-3.5 h-3.5 mr-1" /> Add
           </Button>
         </div>
       </div>
@@ -109,10 +110,15 @@ const Menu = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
   
-  // ✅ Category state for dynamic filtering
-  const [availableCategories, setAvailableCategories] = useState([]); 
+  // Modal State
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [modifiers, setModifiers] = useState({}); // { extraCheese: true, size: 'large' }
+  
+  // 🔘 Tabbed Navigation State (Defaults to 'Premium')
+  const [activeCategory, setActiveCategory] = useState('Premium');
 
   const { addItem } = useCart();
   const { toast } = useToast();
@@ -127,12 +133,6 @@ const Menu = () => {
         }
         const data = await res.json();
         setProducts(data);
-        
-        // 🎯 FIX: Extract unique categories from fetched data
-        // Filter out empty/null categories
-        const categories = [...new Set(data.map(p => p.category).filter(c => c && c.trim()))];
-        setAvailableCategories(categories);
-
       } catch (err) {
         console.error("Fetch Error:", err);
         setError("Failed to load menu. Please check the backend server.");
@@ -143,150 +143,394 @@ const Menu = () => {
     fetchProducts();
   }, []);
 
-  // 🎯 Filtering Logic (unchanged)
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(search.toLowerCase()) ||
-      product.description.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = category === 'all' || product.category === category;
-    return matchesSearch && matchesCategory;
-  });
-
-  // 🎯 Add to Cart (unchanged)
-  const handleAddToCart = (product) => {
-    addItem({
-      id: product._id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-    });
-    toast({ title: `${product.name} added to cart!`, duration: 2000 });
+  // Open Modal Handler
+  const openProductModal = (product) => {
+    setSelectedProduct(product);
+    setQuantity(1);
+    // Initialize default modifiers based on category
+    if (product.category.toLowerCase().includes('drink')) {
+        setModifiers({ size: 'regular' });
+    } else {
+        setModifiers({});
+    }
+    setIsModalOpen(true);
   };
 
-  // ✅ Skeleton Loader Component
+  // Add to Cart Logic
+  const handleAddToCart = () => {
+    if (!selectedProduct) return;
+
+    // Calculate total price with modifiers
+    let finalPrice = Number(selectedProduct.price);
+    let description = selectedProduct.name;
+
+    // Apply modifier costs
+    if (modifiers.extraCheese) {
+        finalPrice += 150;
+        description += " + Extra Cheese";
+    }
+    if (modifiers.size === '1l') {
+        finalPrice += 200;
+        description += " (1L)";
+    }
+    if (modifiers.size === '2l') {
+        finalPrice += 350;
+        description += " (2L)";
+    }
+     if (modifiers.size === 'regular') {
+        description += " (Regular)";
+    }
+
+
+    addItem({
+      id: selectedProduct._id,
+      name: description,
+      price: finalPrice,
+      image: selectedProduct.image,
+      quantity: quantity
+    });
+
+    toast({ 
+        title: "Added to Order",
+        description: `${description} x${quantity} added to cart.`,
+        duration: 2000,
+        className: "bg-[#09090b] border border-[#FFB800]/20 text-white"
+    });
+    setIsModalOpen(false);
+  };
+
+
+  // Group Products by Category
+  const groupedProducts = products.reduce((acc, product) => {
+    // Normalize Category Name
+    let cat = product.category || 'Other';
+    // Capitalize
+    cat = cat.charAt(0).toUpperCase() + cat.slice(1);
+    
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(product);
+    return acc;
+  }, {});
+  
+  // 🏆 Create "Premium" Category (Top items by price/quality)
+  const premiumProducts = [...products]
+    .sort((a, b) => Number(b.price) - Number(a.price))
+    .slice(0, 8); // Top 8 most expensive items
+
+  // Add 'Premium' to groupedProducts
+  const finalGroupedProducts = { ...groupedProducts, 'Premium': premiumProducts };
+
+  // Sort categories: Premium first, then Burgers, etc.
+  const categoryOrder = ['Premium', 'Burgers', 'Submarines', 'Drinks', 'Sides'];
+  const sortedCategories = Object.keys(finalGroupedProducts).sort((a, b) => {
+      const indexA = categoryOrder.indexOf(a);
+      const indexB = categoryOrder.indexOf(b);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.localeCompare(b);
+  });
+
   const SkeletonCard = () => (
-    <div className="p-4 space-y-3 rounded-lg glass">
-      <div className="w-full h-56 rounded-md bg-muted animate-pulse"></div>
-      <div className="w-3/4 h-6 rounded bg-muted animate-pulse"></div>
-      <div className="w-full h-4 rounded bg-muted animate-pulse"></div>
-      <div className="w-1/2 h-4 rounded bg-muted animate-pulse"></div>
-      <div className="flex items-center justify-between pt-2">
-        <div className="w-1/3 h-8 rounded bg-muted animate-pulse"></div>
-        <div className="w-1/4 h-10 rounded bg-muted animate-pulse"></div>
+    <div className="p-4 space-y-4 rounded-xl bg-[#09090b] border border-white/5 h-[400px] flex flex-col">
+      <div className="w-full h-48 rounded-lg bg-white/5 animate-pulse"></div>
+      <div className="space-y-2 flex-1">
+         <div className="w-3/4 h-6 rounded bg-white/5 animate-pulse"></div>
+         <div className="w-full h-4 rounded bg-white/5 animate-pulse"></div>
+         <div className="w-1/2 h-4 rounded bg-white/5 animate-pulse"></div>
+      </div>
+      <div className="flex items-center justify-between pt-4">
+        <div className="w-20 h-8 rounded bg-white/5 animate-pulse"></div>
+        <div className="w-24 h-10 rounded bg-white/5 animate-pulse"></div>
       </div>
     </div>
   );
 
-  // 🎯 Loading/Error UI
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-secondary">
+      <div className="min-h-screen bg-[#050505] text-white">
         <Navbar />
-        <main className="container px-4 py-8 mx-auto">
-          {/* Placeholder for header and filters */}
-          <div className="w-full h-48 mb-8 rounded-md bg-background/30 animate-pulse"></div>
-          {/* ✅ Skeleton Grid */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
+        <main className="container px-4 py-28 mx-auto">
+          <div className="w-full h-32 mb-12 rounded-2xl bg-white/5 animate-pulse"></div>
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         </main>
       </div>
     );
   }
-  if (error) {
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary text-center">
-            <XCircle className="w-16 h-16 text-red-500 mb-4" />
-            <h2 className="text-3xl font-bold mb-2">Oops! Something went wrong.</h2>
-            <p className="text-xl font-semibold text-red-400">{error}</p>
-            <p className="mt-4 text-muted-foreground">Please try refreshing the page or check if the server is running.</p>
-        </div>
-    );
+
+  // Define categories that have matching products
+  const availableCategories = sortedCategories;
+
+  // Determine what to display: Look at Search OR Active Tab
+  let displayCategory = activeCategory;
+  let displayProducts = finalGroupedProducts[activeCategory] || [];
+
+  // If search is active, we ignore tabs and show ALL matches
+  const isSearching = search.length > 0;
+  let searchResults = [];
+  if (isSearching) {
+      searchResults = products.filter(p => 
+          p.name.toLowerCase().includes(search.toLowerCase()) || 
+          p.description.toLowerCase().includes(search.toLowerCase())
+      );
   }
 
-  // 🎯 Render UI
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary selection:bg-yellow-300 selection:text-black">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-[#FFB800] selection:text-black">
       <Navbar />
-      <main className="container px-4 py-8 mx-auto">
+      <main className="container px-4 pt-28 pb-16 mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: -30 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="relative z-10"
         >
-          <div className="mb-12 text-center">
-            <h1 className="text-4xl font-extrabold md:text-5xl tracking-tight">
-              Explore Our{' '}
-              <span className="text-transparent bg-gradient-to-r from-primary to-accent bg-clip-text">
-                Menu
-              </span>
+          <div className="mb-8 text-center space-y-4">
+            <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight text-white drop-shadow-xl relative z-10">
+              Explore Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FFB800] to-yellow-600 drop-shadow-[0_0_20px_rgba(255,184,0,0.3)]">Menu</span>
             </h1>
-            <p className="mt-3 text-lg text-muted-foreground">
-              Find your next favorite burger.
-            </p>
-          </div>
-
-          {/* 🔍 Filters */}
-          <div className="sticky top-[60px] z-10 py-4 mb-8 bg-background/80 backdrop-blur-sm rounded-md shadow-md">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="relative flex-1">
-                <Search className="absolute w-5 h-5 transform -translate-y-1/2 left-4 top-1/2 text-muted-foreground" />
+            
+            {/* 🔍 Simple Centered Search */}
+            <div className="max-w-md mx-auto relative group mt-8 text-left">
+                <Search className="absolute w-5 h-5 transform -translate-y-1/2 left-4 top-1/2 text-gray-500 group-focus-within:text-[#FFB800] transition-colors" />
                 <Input
-                  placeholder="Search burgers by name or description..."
+                  placeholder="Search for your cravings..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12"
-                  aria-label="Search burgers"
+                  className="pl-12 h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-[#FFB800]/50 focus:bg-white/10 rounded-full transition-all shadow-lg text-base"
                 />
-              </div>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full md:w-[220px]" aria-label="Filter by Category">
-                  <SelectValue placeholder="Filter by Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {/* ✅ Dynamically generate SelectItems */}
-                  {availableCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>
-                      {/* Display category name with capitalized first letter */}
-                      {cat.charAt(0).toUpperCase() + cat.slice(1)} 
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
+            
+            {/* 📍 Tabbed Navigation Pills (Hidden if searching) */}
+            {!isSearching && (
+                <div className="sticky top-[80px] z-40 py-4 flex items-center justify-center gap-2 flex-wrap bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 -mx-4 px-4 shadow-[0_4px_30px_-5px_rgba(0,0,0,0.5)]">
+                    {availableCategories.map((category) => (
+                        <button
+                            key={category}
+                            onClick={() => setActiveCategory(category)}
+                            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center gap-2 ${
+                                activeCategory === category
+                                    ? 'bg-[#FFB800] text-black shadow-[0_0_20px_-5px_rgba(255,184,0,0.5)] border border-[#FFB800]'
+                                    : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white hover:bg-white/10'
+                            }`}
+                        >
+                            {category === 'Premium' && <Star className="w-3 h-3 fill-current" />}
+                            {category}
+                        </button>
+                    ))}
+                </div>
+            )}
           </div>
         </motion.div>
 
-        {/* 🍔 Products Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          // ✅ Grid එකට items 5ක් එන ලෙස වෙනස් කළා
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
-        >
-          {filteredProducts.map((product) => (
-            <BurgerCard key={product._id} product={product} onAddToCart={handleAddToCart}/>
-          ))}
-        </motion.div>
+        {/* 🍔 Product Grid Area */}
+        <div className="min-h-[400px]">
+            {/* CASE 1: SEARCH RESULTS */}
+            {isSearching ? (
+                <div>
+                     <motion.h2 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }}
+                        className="text-2xl font-bold text-white mb-6 flex items-center gap-2"
+                     >
+                        <Search className="w-6 h-6 text-[#FFB800]" />
+                        Search Results ({searchResults.length})
+                     </motion.h2>
+                    
+                     {searchResults.length > 0 ? (
+                        <motion.div
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                            key="search-grid"
+                            className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                        >
+                            <AnimatePresence>
+                                {searchResults.map((product) => (
+                                    <BurgerCard key={product._id} product={product} onClick={openProductModal}/>
+                                ))}
+                            </AnimatePresence>
+                        </motion.div>
+                     ) : (
+                        <div className="text-center py-20">
+                             <p className="text-gray-400 text-lg">No matches found for "{search}"</p>
+                             <Button variant="link" onClick={() => setSearch('')} className="text-[#FFB800] mt-2">Clear Search</Button>
+                        </div>
+                     )}
+                </div>
+            ) : (
+                /* CASE 2: TABBED CATEGORY VIEW */
+                <motion.div
+                    key={activeCategory} // Key change triggers animation
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3, type: 'tween', ease: 'easeOut' }}
+                >
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#FFB800]/50 to-transparent opacity-50"></div>
+                        <h2 className="text-3xl font-black text-white uppercase tracking-wider drop-shadow-lg flex items-center gap-3">
+                            {activeCategory === 'Premium' && <Star className="w-8 h-8 text-[#FFB800] fill-current" />}
+                            {activeCategory === 'Burgers' && <Flame className="w-8 h-8 text-[#FFB800]" />}
+                            {activeCategory === 'Drinks' && <Droplets className="w-8 h-8 text-blue-400" />}
+                            {activeCategory}
+                        </h2>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#FFB800]/50 to-transparent opacity-50"></div>
+                    </div>
 
-        {/* ✅ Engaging Empty State */}
-        {filteredProducts.length === 0 && !loading && (
-          <div className="py-20 text-center col-span-full">
-            <XCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-2xl font-bold">No Burgers Found</h3>
-            <p className="mt-2 text-muted-foreground">
-              Your search for "{search}" in "{category}" didn't return any results.
-            </p>
-            <Button 
-              variant="outline" 
-              className="mt-6" 
-              onClick={() => { setSearch(''); setCategory('all'); }}>
-              Clear All Filters
-            </Button>
-          </div>
-        )}
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                    >
+                        <AnimatePresence mode='popLayout'>
+                            {displayProducts.map((product) => (
+                                <BurgerCard key={product._id} product={product} onClick={openProductModal}/>
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
+                </motion.div>
+            )}
+        </div>
+
+        {/* 🛒 Product Detail Modal */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogContent className="bg-[#09090b]/95 backdrop-blur-3xl border border-white/10 text-white p-0 gap-0 overflow-hidden max-w-4xl w-[95vw] rounded-3xl shadow-[0_0_100px_-20px_rgba(255,184,0,0.2)]">
+                {selectedProduct && (
+                    <div className="flex flex-col md:flex-row h-full max-h-[85vh] md:max-h-[600px]">
+                        {/* Left: Image Side */}
+                        <div className="w-full md:w-1/2 relative bg-black/50 overflow-hidden group">
+                             <img 
+                                src={`${BASE_URL}${selectedProduct.image}`} 
+                                alt={selectedProduct.name}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                             />
+                             <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-transparent to-transparent"></div>
+                             <div className="absolute bottom-4 left-4">
+                                <Badge className="bg-[#FFB800] text-black font-extrabold text-xs px-3 py-1 mb-2">
+                                    {selectedProduct.category}
+                                </Badge>
+                             </div>
+                        </div>
+
+                        {/* Right: Details & Customization */}
+                        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col h-full overflow-y-auto custom-scrollbar">
+                             <DialogHeader className="mb-4">
+                                <DialogTitle className="text-3xl md:text-4xl font-black text-white uppercase leading-none tracking-tight mb-2">
+                                    {selectedProduct.name}
+                                </DialogTitle>
+                                <p className="text-sm text-gray-400 leading-relaxed">
+                                    {selectedProduct.description}
+                                </p>
+                             </DialogHeader>
+
+                             {/* Customization Options */}
+                             <div className="flex-1 space-y-6 py-4">
+                                
+                                {/* 🧀 Extra Cheese: APPLIES TO EVERYTHING EXCEPT DRINKS */}
+                                {!selectedProduct.category.toLowerCase().includes('drink') && (
+                                    <div className="space-y-3">
+                                        <Label className="text-[#FFB800] text-xs font-bold uppercase tracking-widest">Customize</Label>
+                                        <div className="flex items-center space-x-2 bg-white/5 p-3 rounded-xl border border-white/5 hover:border-[#FFB800]/30 transition-colors cursor-pointer" onClick={() => setModifiers(prev => ({ ...prev, extraCheese: !prev.extraCheese }))}>
+                                            <Checkbox 
+                                                id="cheese" 
+                                                checked={modifiers.extraCheese || false}
+                                                onCheckedChange={(checked) => setModifiers(prev => ({ ...prev, extraCheese: checked }))}
+                                                className="border-white/20 data-[state=checked]:bg-[#FFB800] data-[state=checked]:text-black"
+                                            />
+                                            <div className="flex-1">
+                                                <label htmlFor="cheese" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-white cursor-pointer select-none">
+                                                    Extra Cheese
+                                                </label>
+                                                <p className="text-xs text-gray-500 mt-1">Add a slice of cheddar cheese</p>
+                                            </div>
+                                            <span className="text-xs font-bold text-[#FFB800]">+ LKR 150</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 🥤 Drink Sizes */}
+                                {selectedProduct.category.toLowerCase().includes('drink') && (
+                                    <div className="space-y-4">
+                                        <Label className="text-[#FFB800] text-xs font-bold uppercase tracking-widest">Select Size</Label>
+                                        <RadioGroup 
+                                            value={modifiers.size || 'regular'} 
+                                            onValueChange={(val) => setModifiers(prev => ({ ...prev, size: val }))}
+                                            className="grid grid-cols-3 gap-3"
+                                        >
+                                            {/* Regular */}
+                                            <div>
+                                                <RadioGroupItem value="regular" id="r-regular" className="peer sr-only" />
+                                                <Label
+                                                    htmlFor="r-regular"
+                                                    className="flex flex-col items-center justify-between rounded-xl border-2 border-white/10 bg-white/5 p-3 hover:bg-white/10 peer-data-[state=checked]:border-[#FFB800] peer-data-[state=checked]:text-[#FFB800] [&:has([data-state=checked])]:border-[#FFB800] cursor-pointer transition-all h-full"
+                                                >
+                                                    <span className="text-xs font-bold mb-1">Standard</span>
+                                                    <span className="text-[10px] text-gray-400">Regular</span>
+                                                </Label>
+                                            </div>
+                                            {/* 1L */}
+                                            <div>
+                                                <RadioGroupItem value="1l" id="r-1l" className="peer sr-only" />
+                                                <Label
+                                                    htmlFor="r-1l"
+                                                    className="flex flex-col items-center justify-between rounded-xl border-2 border-white/10 bg-white/5 p-3 hover:bg-white/10 peer-data-[state=checked]:border-[#FFB800] peer-data-[state=checked]:text-[#FFB800] [&:has([data-state=checked])]:border-[#FFB800] cursor-pointer transition-all h-full"
+                                                >
+                                                    <span className="text-xs font-bold mb-1">Large</span>
+                                                    <span className="text-[10px] text-gray-400">1 Liter</span>
+                                                    <span className="text-[10px] text-[#FFB800] mt-1">+200</span>
+                                                </Label>
+                                            </div>
+                                            {/* 2L */}
+                                            <div>
+                                                <RadioGroupItem value="2l" id="r-2l" className="peer sr-only" />
+                                                <Label
+                                                    htmlFor="r-2l"
+                                                    className="flex flex-col items-center justify-between rounded-xl border-2 border-white/10 bg-white/5 p-3 hover:bg-white/10 peer-data-[state=checked]:border-[#FFB800] peer-data-[state=checked]:text-[#FFB800] [&:has([data-state=checked])]:border-[#FFB800] cursor-pointer transition-all h-full"
+                                                >
+                                                    <span className="text-xs font-bold mb-1">Mega</span>
+                                                    <span className="text-[10px] text-gray-400">2 Liter</span>
+                                                    <span className="text-[10px] text-[#FFB800] mt-1">+350</span>
+                                                </Label>
+                                            </div>
+                                        </RadioGroup>
+                                    </div>
+                                )}
+                             </div>
+
+                             {/* Footer: Price & Add Button */}
+                             <div className="mt-auto pt-6 border-t border-white/10">
+                                <div className="flex items-center justify-between mb-4">
+                                     <div className="flex items-center gap-3 bg-white/5 rounded-full p-1 border border-white/10">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/10 text-white" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
+                                            <Minus className="w-3 h-3" />
+                                        </Button>
+                                        <span className="text-sm font-bold w-4 text-center">{quantity}</span>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-white/10 text-white" onClick={() => setQuantity(quantity + 1)}>
+                                            <Plus className="w-3 h-3" />
+                                        </Button>
+                                     </div>
+                                     <div className="text-right">
+                                        <p className="text-[10px] text-gray-400 uppercase tracking-widest">Total Price</p>
+                                        <p className="text-2xl font-black text-white">
+                                            <span className="text-[#FFB800] text-sm mr-1">LKR</span>
+                                            {((Number(selectedProduct.price) + (modifiers.extraCheese ? 150 : 0) + (modifiers.size === '1l' ? 200 : 0) + (modifiers.size === '2l' ? 350 : 0)) * quantity).toFixed(2)}
+                                        </p>
+                                     </div>
+                                </div>
+                                <Button className="w-full h-12 bg-[#FFB800] text-black font-extrabold rounded-xl hover:bg-[#E5A600] text-sm tracking-widest uppercase shadow-[0_0_30px_-5px_rgba(255,184,0,0.4)] hover:shadow-[0_0_40px_-5px_rgba(255,184,0,0.6)] transition-all" onClick={handleAddToCart}>
+                                    Add To Order
+                                </Button>
+                             </div>
+                        </div>
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
+
       </main>
     </div>
   );
