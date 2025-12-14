@@ -11,17 +11,17 @@ export const createOrder = async (req, res) => {
         const newOrder = await Order.create({
             userId,
             items,
-            totalAmount: total, // Final discounted total
+            totalAmount: total, 
             address,
-            paymentMethod, // ✅ Save payment method
+            paymentMethod, 
         });
 
-        // Coupon එක භාවිත කර ඇත්නම්, isUsed = true ලෙස සලකුණු කරන්න.
+    
         if (couponId) {
             await Coupon.findByIdAndUpdate(couponId, { isUsed: true });
         }
 
-        // ✅ Real-time Notification: 'admin_room' එකට event එකක් යවයි
+        
         const notificationPayload = {
             orderId: newOrder._id,
             totalAmount: newOrder.totalAmount,
@@ -37,7 +37,7 @@ export const createOrder = async (req, res) => {
     }
 };
 
-// 2. Get All Orders for a Specific User (For OrderTracking Page) - (unchanged)
+
 export const getUserOrders = async (req, res) => {
     const { id } = req.params; 
     try {
@@ -57,7 +57,7 @@ export const updateOrderStatus = async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Access denied. Only administrators can change order status.' });
     }
-    // ... (rest of the logic)
+    
     try {
         const order = await Order.findById(orderId);
 
@@ -65,7 +65,7 @@ export const updateOrderStatus = async (req, res) => {
             return res.status(404).json({ message: 'Order not found.' });
         }
 
-        // 🛑 වැදගත්ම කොටස: Order එක දැනටමත් 'delivered' නම්, status එක වෙනස් කිරීම නවත්වන්න.
+       
         if (order.status === 'delivered') {
             return res.status(400).json({ message: 'This order has already been delivered and its status cannot be changed.' });
         }
@@ -80,7 +80,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 };
 
-// 4. Get All Orders (Admin Dashboard) - (unchanged)
+
 export const getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find().sort({ createdAt: -1 }).populate('userId', 'name email'); 
@@ -137,7 +137,7 @@ export const applyCoupon = async (req, res) => {
             discountAmount = 300; // Fixed value for free item
         }
         
-        // Discount එක Subtotal එකට වඩා වැඩි නම්, Subtotal එකට සමාන කරන්න
+        
         if (discountAmount > cartTotal) {
             discountAmount = cartTotal;
         }
@@ -146,7 +146,7 @@ export const applyCoupon = async (req, res) => {
             success: true,
             discount: discountAmount, // Final discount amount
             prizeName: coupon.prizeName,
-            couponId: coupon._id // Coupon ID එක Frontend වෙත යවයි
+            couponId: coupon._id 
         });
 
     } catch (error) {

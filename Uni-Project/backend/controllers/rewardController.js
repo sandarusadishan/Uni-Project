@@ -37,7 +37,7 @@ export const playDailyReward = async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // 1. දිනපතා සීමාව පරීක්ෂා කිරීම
+        
         const userPlay = await RewardPlay.findOne({ user: userId });
         
         if (userPlay) {
@@ -49,13 +49,13 @@ export const playDailyReward = async (req, res) => {
             }
         }
 
-        // 2. ත්‍යාගය තෝරා ගැනීම
+        
         const winningIndex = Math.floor(Math.random() * PRIZES_CONFIG.length);
         const finalResult = PRIZES_CONFIG[winningIndex];
 
         let couponCode = null;
 
-        // 3. Coupon Code එක සාදා Database එකේ ගබඩා කිරීම
+        
         if (finalResult.type === 'win') {
             const uniqueSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
             couponCode = `${finalResult.name.replace(/ /g, '_').toUpperCase().slice(0, 8)}-${uniqueSuffix}`;
@@ -69,7 +69,7 @@ export const playDailyReward = async (req, res) => {
             });
         }
 
-        // 4. RewardPlay දත්ත ගබඩාව යාවත්කාලීන කිරීම (Update/Create)
+        
         const updateData = {
             lastPlayedDate: new Date(),
             lastPrize: finalResult.name
@@ -81,7 +81,7 @@ export const playDailyReward = async (req, res) => {
             await RewardPlay.create({ user: userId, ...updateData });
         }
         
-        // 5. Frontend වෙත ප්‍රතිඵලය යැවීම
+        
         res.json({ 
             success: true, 
             prize: { ...finalResult, code: couponCode || null, description: finalResult.description } 

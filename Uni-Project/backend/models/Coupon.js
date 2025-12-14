@@ -4,9 +4,9 @@ const couponSchema = new mongoose.Schema({
     code: { 
         type: String, 
         required: true,
-        unique: true // කූපන් කේතය අද්විතීය විය යුතුය
+        unique: true 
     },
-    prizeName: { // e.g., 'LKR 100 OFF', 'FREE DRINK'
+    prizeName: { 
         type: String, 
         required: true 
     },
@@ -22,17 +22,17 @@ const couponSchema = new mongoose.Schema({
         type: Boolean, 
         default: false 
     },
-    assignedTo: { // කූපනය හිමි User
+    assignedTo: {
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User', 
         required: true 
     },
     expiryDate: {
         type: Date,
-        default: () => new Date(+new Date() + 7 * 24 * 60 * 60 * 1000) // දින 7කින් කල් ඉකුත් වේ
+        default: () => new Date(+new Date() + 7 * 24 * 60 * 60 * 1000) 
     }
 }, { timestamps: true });
 
-// 🎯 Model එක export default ලෙස සකස් කර ඇත.
+
 const Coupon = mongoose.model('Coupon', couponSchema);
 export default Coupon;

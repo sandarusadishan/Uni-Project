@@ -7,9 +7,9 @@ import {
     updateOrderStatus, 
     getAllOrders, 
     deleteOrder,
-    applyCoupon // ✅ applyCoupon function එක import කරන්න 
+    applyCoupon 
 } from '../controllers/OrderController.js';
-import { protect } from '../models/authMiddleware.js'; // ඔබගේ Auth Middleware එක
+import { protect } from '../models/authMiddleware.js'; 
 
 const orderRouter = express.Router();
 
@@ -18,7 +18,7 @@ orderRouter.post('/', protect, createOrder);
 orderRouter.get('/user/:id', protect, getUserOrders); 
 
 // Coupon Route
-orderRouter.post('/apply-coupon', protect, applyCoupon); // ✅ Coupon Route
+orderRouter.post('/apply-coupon', protect, applyCoupon); 
 
 // Admin Routes (Admin Dashboard access)
 orderRouter.get('/', protect, getAllOrders); 

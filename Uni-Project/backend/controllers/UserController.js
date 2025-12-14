@@ -21,7 +21,7 @@ const generateToken = (id) => {
 // --- Multer Setup for Profile Pictures ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Project root directory එකේ uploads/profiles වෙත යොමු කරයි.
+    
     const uploadDir = path.join(process.cwd(), 'uploads/profiles/');
     
     if (!fs.existsSync(uploadDir)) {

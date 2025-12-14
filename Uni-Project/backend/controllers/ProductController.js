@@ -112,7 +112,7 @@ export const addProduct = (req, res) => {
 };
 
 
-// ✅ Update product (Uses Multer 'upload' internally)
+
 export const updateProduct = (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -163,7 +163,7 @@ export const updateProduct = (req, res) => {
 };
 
 
-// ✅ Delete product
+
 export const deleteProduct = async (req, res) => {
   try {
     const productToDelete = await Product.findById(req.params.id);

@@ -11,11 +11,11 @@ const OrderItemSchema = new mongoose.Schema({
 
 const OrderSchema = new mongoose.Schema({
     userId: {
-        type: mongoose.Schema.Types.ObjectId, // User ID එක Link කරන්න
+        type: mongoose.Schema.Types.ObjectId, 
         ref: 'User',
         required: true,
     },
-    items: [OrderItemSchema], // ඇණවුම් කරන ලද items array එක
+    items: [OrderItemSchema], 
     totalAmount: {
         type: Number,
         required: true,
@@ -26,7 +26,7 @@ const OrderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'preparing', 'on-the-way', 'delivered'], // ඇණවුම් තත්ත්වයන්
+        enum: ['pending', 'preparing', 'on-the-way', 'delivered'], 
         default: 'pending',
     },
     createdAt: {

@@ -1,6 +1,4 @@
-// models/RewardPlay.js
-
-import mongoose from 'mongoose'; // CommonJS භාවිත කරන්නේ නම් require('mongoose')
+import mongoose from 'mongoose';
 
 const rewardPlaySchema = new mongoose.Schema({
     user: { 
